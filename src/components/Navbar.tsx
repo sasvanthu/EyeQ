@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-scroll";
+import { Link as RouterLink } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -48,6 +49,20 @@ const Navbar = ({ className }: NavbarProps) => {
             </button>
           </Link>
           <div className="w-px h-8 bg-white/20"></div>
+          <RouterLink to="/admin/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
+            <button className="nav-animated-button group">
+              <div className="nav-outline"></div>
+              <div className="nav-button-content">
+                <p className="nav-text">
+                  <span style={{ '--i': 0 } as React.CSSProperties}>A</span>
+                  <span style={{ '--i': 1 } as React.CSSProperties}>d</span>
+                  <span style={{ '--i': 2 } as React.CSSProperties}>m</span>
+                  <span style={{ '--i': 3 } as React.CSSProperties}>i</span>
+                  <span style={{ '--i': 4 } as React.CSSProperties}>n</span>
+                </p>
+              </div>
+            </button>
+          </RouterLink>
           <Link to="about" smooth={true} duration={500}>
             <button className="nav-animated-button group">
               <div className="nav-outline"></div>
@@ -164,6 +179,15 @@ const Navbar = ({ className }: NavbarProps) => {
                 Contact Us
               </motion.button>
             </Link>
+            <RouterLink to="/admin/dashboard" onClick={handleNavClick}>
+              <motion.button 
+                className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Admin
+              </motion.button>
+            </RouterLink>
           </motion.div>
         )}
       </AnimatePresence>

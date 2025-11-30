@@ -1,5 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link, Element } from "react-scroll";
+import { Link as ScrollLink, Element } from "react-scroll";
+import { Link as RouterLink } from 'react-router-dom';
 import { CalendarIcon, FileTextIcon } from "@radix-ui/react-icons";
 import { BellIcon, Share2Icon, Instagram, Linkedin, Phone } from "lucide-react";
 import RotatingText from "@/components/RotatingText";
@@ -389,10 +390,13 @@ const Index = () => {
                   </ScrollReveal>
                   <ScrollReveal animation="slide-up" delay={500} duration={800}>
                     <div className="mt-10 flex flex-wrap justify-center gap-4">
-                      <Link to="about" smooth={true} duration={500} className="cursor-pointer">
-                      </Link>
-                      <Link to="features" smooth={true} duration={500} className="cursor-pointer">
-                      </Link>
+                      <ScrollLink to="about" smooth={true} duration={500} className="cursor-pointer">
+                      </ScrollLink>
+                      <ScrollLink to="features" smooth={true} duration={500} className="cursor-pointer">
+                      </ScrollLink>
+                      <RouterLink to="/admin/dashboard">
+                        <button className="px-5 py-3 rounded-lg bg-primary text-primary-foreground shadow-md hover:scale-105 transition-transform">Admin Dashboard</button>
+                      </RouterLink>
                     </div>
                   </ScrollReveal>
                 </div>

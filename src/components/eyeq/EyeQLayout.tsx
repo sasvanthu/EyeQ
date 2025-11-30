@@ -1,0 +1,124 @@
+import React from 'react';
+import { Outlet, Link } from 'react-router-dom';
+import {
+  Sidebar,
+  SidebarProvider,
+  SidebarHeader,
+  SidebarContent,
+  SidebarFooter,
+  SidebarGroup,
+  SidebarGroupLabel,
+  SidebarMenu,
+  SidebarMenuItem,
+  SidebarMenuButton,
+  SidebarTrigger,
+  SidebarInset,
+} from '@/components/ui/sidebar';
+import { Avatar, AvatarImage, AvatarFallback } from '@/components/ui/avatar';
+import { Bell } from 'lucide-react';
+import GlassCard from './GlassCard';
+import NeonButton from './NeonButton';
+import { NeonLogo } from '@/components/eyeq';
+import { isAdmin } from '@/lib/auth';
+
+const EyeQLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+  return (
+    <SidebarProvider>
+      <div className="min-h-screen flex flex-col md:flex-row bg-background text-foreground">
+        <Sidebar side="left" className="w-[var(--sidebar-width)] z-30">
+          <SidebarHeader>
+            <Link to="/" className="flex items-center gap-3 px-2 py-3">
+              <NeonLogo className="h-10 w-10" />
+              <div className="flex flex-col">
+                <span className="text-sm font-bold">EyeQ Club</span>
+                <span className="text-xs text-muted-foreground">SIMATS Tech Clubs</span>
+              </div>
+            </Link>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Manage</SidebarGroupLabel>
+              <SidebarMenu>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/admin/dashboard">Dashboard</Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                {isAdmin() && (
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/admin/members">Approvals</Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                )}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/admin/events">Events</Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/admin/analytics">Analytics</Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/admin/chat">Chat</Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                {/* AI Tools removed from sidebar */}
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/admin/portfolio">Portfolio</Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/admin/alumni">Alumni</Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+              </SidebarMenu>
+            </SidebarGroup>
+          </SidebarContent>
+          <SidebarFooter>
+            <div className="px-2 py-3">
+              <GlassCard className="flex items-center justify-between gap-3">
+                <div className="flex items-center gap-3">
+                  <Avatar>
+                    <AvatarImage src="/team/President.JPG" alt="Admin Avatar" />
+                    <AvatarFallback>AS</AvatarFallback>
+                  </Avatar>
+                  <div className="flex flex-col">
+                    <span className="text-sm font-semibold">Aswath</span>
+                    <span className="text-xs text-muted-foreground">Admin</span>
+                  </div>
+                </div>
+                <div className="flex items-center gap-2">
+                  <NeonButton variant="ghost">Settings</NeonButton>
+                  <NeonButton variant="ghost">Logout</NeonButton>
+                </div>
+              </GlassCard>
+            </div>
+          </SidebarFooter>
+        </Sidebar>
+        <SidebarInset className="p-4 md:p-6">
+          {/* Topbar */}
+          <div className="flex items-center justify-between gap-4 mb-6">
+            <div className="flex items-center gap-3">
+              <SidebarTrigger />
+              <h2 className="text-xl font-bold">Admin Console</h2>
+              <div className="text-xs text-muted-foreground">EyeQ Club Management</div>
+            </div>
+            <div className="flex items-center gap-3">
+              <button className="p-2 rounded-md neon-outline neon-glow"><Bell /></button>
+            </div>
+          </div>
+          {/* Content */}
+          {children}
+        </SidebarInset>
+      </div>
+    </SidebarProvider>
+  );
+};
+
+export default EyeQLayout;

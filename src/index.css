@@ -181,6 +181,60 @@ All colors MUST be HSL.
   }
 }
 
+/* EyeQ Club Platform specific utilities */
+
+/* Neon + glassmorphism theme */
+:root {
+  --neon-blue: 200 100% 54%; /* HSL triple without function wrapper */
+  --neon-blue-hex: #00bfff;
+  --glass-bg: 220 14% 6% / 40%;
+  --glass-border: 220 14% 40% / 10%;
+  --neon-glow: 70 100% 60% / 0.8;
+}
+
+.glass-card {
+  background: linear-gradient(135deg, rgba(255, 255, 255, 0.02), rgba(0,0,0,0.25));
+  backdrop-filter: blur(8px) saturate(120%);
+  border: 1px solid rgba(255, 255, 255, 0.03);
+  box-shadow: 0 8px 30px rgba(0, 0, 0, 0.6), 0 0 30px rgba(0, 120, 255, 0.06);
+}
+
+.neon-outline {
+  box-shadow: 0 3px 16px hsla(var(--neon-blue), 0.12), inset 0 0 2px hsla(var(--neon-blue), 0.45);
+  transition: box-shadow 0.2s ease, transform 0.12s ease;
+}
+.neon-outline:hover { transform: translateY(-4px) scale(1.01); box-shadow: 0 12px 40px rgba(0, 180, 255, 0.20); }
+
+.neon-btn {
+  background: linear-gradient(90deg, rgba(0,191,255,0.14), rgba(0,119,255,0.06));
+  border: 1px solid rgba(0, 191, 255, 0.18);
+  color: hsl(var(--neon-blue-hex));
+  text-shadow: 0 1px 2px rgba(0,0,0,0.6);
+}
+
+.neon-glow {
+  filter: drop-shadow(0 6px 18px rgba(0,191,255,0.12));
+}
+
+/* Slight 3D card tilt */
+.card-3d { transform-style: preserve-3d; perspective: 800px; }
+.card-3d:hover { transform: rotateX(2deg) rotateY(-2deg) translateY(-5px); }
+
+/* Simple floating shadow for the neon look */
+.floating {
+  box-shadow: 0 8px 40px rgba(0, 0, 0, 0.7), inset 0 -4px 12px rgba(0, 0, 0, 0.3);
+}
+
+/* Neon badge */
+.neon-badge {
+  background: linear-gradient(90deg, rgba(0,191,255,0.12), rgba(0,120,255,0.06));
+  color: #cfefff;
+  border-radius: 0.5rem;
+  padding: 0.25rem 0.6rem;
+  font-weight: 600;
+  border: 1px solid rgba(0,191,255,0.12);
+}
+
 @layer base {
   * {
     @apply border-border;
@@ -393,3 +447,8 @@ body {
     transform: translateY(0) translateX(0) rotate(0);
   }
 }
+
+.btn {
+  display:inline-flex;align-items:center;gap:0.5rem; padding:0.5rem 0.9rem; border-radius: 0.5rem; border: none; cursor: pointer; font-weight: 600;
+}
+.btn.neon-btn { display:inline-flex; }

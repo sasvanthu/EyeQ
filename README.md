@@ -1,3 +1,17 @@
+### QR Scanner
+The Events page now includes a camera-based QR scanning modal (using `react-qr-reader`). To use it in a browser you must allow camera access in the browser.
+
+### Certificate generation server (Express + Puppeteer)
+This repo includes a small Express server at `server/` that generates certificate PDFs using Puppeteer. Run it with:
+
+```powershell
+cd server
+npm install
+npm start
+```
+
+Set the `VITE_CERT_SERVER_URL` variable in the main project's `.env` to the server URL (e.g., `http://localhost:4000`) to enable server-side certificate generation.
+
 # EyeQ Club - Computer Vision Community at SIMATS
 
 Welcome to the EyeQ Club website, a student-run Computer Vision club at Saveetha Institute of Medical and Technical Sciences (SIMATS).
@@ -54,6 +68,26 @@ npm run dev
 ```
 
 4. Open your browser and navigate to `http://localhost:8080`
+
+### Optional: Connect to Supabase (recommended)
+This project includes a simple Supabase client at `src/lib/supabase.ts` and a SQL schema at `db/supabase-schema.sql` to create tables.
+1. Create a free project at https://app.supabase.com
+2. Create a `.env` file at the project root with:
+```env
+VITE_SUPABASE_URL=https://<your-project>.supabase.co
+VITE_SUPABASE_ANON_KEY=<your_anon_public_key>
+```
+3. Run the `db/supabase-schema.sql` in Supabase SQL editor to create schema.
+4. Restart the dev server and the UI will use Supabase for events/members if the env variables are set.
+
+
+### Admin UI (Demo)
+To try the Admin UI demo once the server is running, visit the following routes:
+- `/admin/dashboard` — Admin dashboard with stats and charts
+- `/admin/members` — Member approval workflow
+- `/admin/events` — Events management with QR generation and certificates
+- `/admin/analytics` — Analytics and CSV export
+- `/admin/chat` — Chat hub (UI scaffold)
 
 ## Available Scripts
 
