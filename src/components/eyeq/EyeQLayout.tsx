@@ -19,9 +19,10 @@ import { Bell } from 'lucide-react';
 import GlassCard from './GlassCard';
 import NeonButton from './NeonButton';
 import { NeonLogo } from '@/components/eyeq';
-import { isAdmin } from '@/lib/auth';
+import { useAuth } from '@/lib/auth';
 
 const EyeQLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+  const { isAdmin } = useAuth();
   return (
     <SidebarProvider>
       <div className="min-h-screen flex flex-col md:flex-row bg-background text-foreground">
@@ -41,15 +42,33 @@ const EyeQLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
               <SidebarMenu>
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to="/admin/dashboard">Dashboard</Link>
+                    <Link to="/dashboard">Home</Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
-                {isAdmin() && (
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
-                    <Link to="/admin/members">Approvals</Link>
+                    <Link to="/projects">Projects</Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/learning">Learning Log</Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarMenuItem>
+                  <SidebarMenuButton asChild>
+                    <Link to="/profile">My Profile</Link>
+                  </SidebarMenuButton>
+                </SidebarMenuItem>
+
+                <SidebarGroupLabel className="mt-4">Admin Tools</SidebarGroupLabel>
+                {isAdmin && (
+                  <SidebarMenuItem>
+                    <SidebarMenuButton asChild>
+                      <Link to="/admin/members">Approvals</Link>
+                    </SidebarMenuButton>
+                  </SidebarMenuItem>
                 )}
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
@@ -59,22 +78,6 @@ const EyeQLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
                 <SidebarMenuItem>
                   <SidebarMenuButton asChild>
                     <Link to="/admin/analytics">Analytics</Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link to="/admin/chat">Chat</Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                {/* AI Tools removed from sidebar */}
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link to="/admin/portfolio">Portfolio</Link>
-                  </SidebarMenuButton>
-                </SidebarMenuItem>
-                <SidebarMenuItem>
-                  <SidebarMenuButton asChild>
-                    <Link to="/admin/alumni">Alumni</Link>
                   </SidebarMenuButton>
                 </SidebarMenuItem>
               </SidebarMenu>

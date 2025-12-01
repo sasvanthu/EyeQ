@@ -18,7 +18,7 @@ import { TypewriterEffectSmooth } from "@/components/ui/typewriter-effect";
 import { SparklesCore } from "@/components/ui/sparkles";
 import GoogleGeminiEffectSection from "@/components/GoogleGeminiEffectSection";
 import { cn } from "@/lib/utils";
-import eyeqLogo from "@/assets/eyeq-logo.png"; 
+import eyeqLogo from "@/assets/eyeq-logo.png";
 import Navbar from "@/components/Navbar";
 import { motion, Variants } from "framer-motion";
 import TeamMember from "@/components/TeamMember";
@@ -284,7 +284,7 @@ const Index = () => {
           duration={500}
         >
           {/* This is your main content wrapper */}
-          <motion.div 
+          <motion.div
             className="min-h-screen bg-transparent text-foreground overflow-x-hidden relative"
             style={{ zIndex: 1 }}
             initial={{ opacity: 0 }}
@@ -293,7 +293,7 @@ const Index = () => {
           >
             {/* Navigation Bar */}
             <Navbar />
-            
+
             {/* Old Background Image - REMOVED
             <div
               className="fixed inset-0 z-0 opacity-5 bg-center bg-no-repeat bg-cover parallax"
@@ -309,7 +309,7 @@ const Index = () => {
                   className="-top-40 left-0 md:-top-20 md:left-60"
                   fill="white"
                 />
-                
+
                 <div className="text-center relative z-20">
                   <ScrollReveal animation="fade" delay={100} duration={900}>
                     <div className="flex items-center justify-center gap-4 mb-8">
@@ -330,7 +330,7 @@ const Index = () => {
                       />
                     </div>
                   </ScrollReveal>
-                  
+
                   <ScrollReveal animation="slide-up" delay={300} duration={900}>
                     <div className="relative w-fit mx-auto overflow-hidden">
                       {/* Sparkles Background */}
@@ -357,7 +357,7 @@ const Index = () => {
 
                       {/* TypewriterEffectSmooth */}
                       <div className="relative z-10 animate-[pulseOpenClose_4.5s_ease-in-out_infinite]">
-                        <TypewriterEffectSmooth 
+                        <TypewriterEffectSmooth
                           words={[
                             {
                               text: "Riding",
@@ -394,6 +394,11 @@ const Index = () => {
                       </ScrollLink>
                       <ScrollLink to="features" smooth={true} duration={500} className="cursor-pointer">
                       </ScrollLink>
+
+                      <RouterLink to="/portal">
+                        <button className="px-5 py-3 rounded-lg bg-white text-black font-bold shadow-md hover:scale-105 transition-transform border border-white/20">Member Portal</button>
+                      </RouterLink>
+
                       <RouterLink to="/admin/dashboard">
                         <button className="px-5 py-3 rounded-lg bg-primary text-primary-foreground shadow-md hover:scale-105 transition-transform">Admin Dashboard</button>
                       </RouterLink>
@@ -423,7 +428,7 @@ const Index = () => {
                               </ScrollReveal>
                             </div>
                           </div>
-                    
+
                           {/* Content */}
                           <div className="max-w-4xl mx-auto">
                             {/* Heading with Gradient Underline */}
@@ -435,7 +440,7 @@ const Index = () => {
                                 <div className="h-1 w-32 bg-gradient-to-r from-primary to-purple-500 rounded-full mx-auto"></div>
                               </ScrollReveal>
                             </div>
-                            
+
                             {/* Mission Statement */}
                             <ScrollReveal animation="slide-up" delay={300} duration={900}>
                               <p className="text-xl text-foreground leading-relaxed mb-12 max-w-3xl mx-auto">
@@ -445,7 +450,7 @@ const Index = () => {
                                 <span className="text-primary font-semibold">community</span>.
                               </p>
                             </ScrollReveal>
-                            
+
                             {/* Animated Stats */}
                             <div className="grid grid-cols-1 sm:grid-cols-3 gap-8 mb-12 max-w-2xl mx-auto">
                               <AnimatedSection delay={100}>
@@ -494,7 +499,7 @@ const Index = () => {
                                 </div>
                               </AnimatedSection>
                             </div>
-                            
+
                             {/* Call to Action */}
                             <ScrollReveal animation="slide-up" delay={500} duration={900}>
                               <div className="flex flex-col sm:flex-row gap-4 justify-center">
@@ -646,7 +651,7 @@ const Index = () => {
                 {/* Team Member Quotes */}
                 <section className="relative py-20 px-4 z-10 bg-muted/30">
                   <div className="max-w-6xl mx-auto">
-                    <motion.div 
+                    <motion.div
                       className="grid grid-cols-1 gap-8"
                       variants={containerVariants}
                       initial="hidden"
@@ -664,7 +669,7 @@ const Index = () => {
                                 <p className="text-muted-foreground text-sm font-medium mb-4">
                                   {member.role}
                                 </p>
-                                
+
                                 {/* Member Quote */}
                                 <p className="text-sm text-muted-foreground italic leading-relaxed">
                                   "{member.quote}"

@@ -452,3 +452,19 @@ body {
   display:inline-flex;align-items:center;gap:0.5rem; padding:0.5rem 0.9rem; border-radius: 0.5rem; border: none; cursor: pointer; font-weight: 600;
 }
 .btn.neon-btn { display:inline-flex; }
+
+/* Admin Theme Overrides */
+.admin-theme {
+  --neon-blue: 35 90% 55%; /* Amber/Gold */
+  --neon-blue-hex: #f59e0b;
+  --primary: 35 90% 55%;
+  --ring: 35 90% 55%;
+  --background: 220 15% 10%; /* Dark Slate */
+  --card: 220 15% 14%;
+  --border: 220 15% 20%;
+}
+
+.admin-theme .sidebar {
+  background-color: hsl(220 15% 12%);
+  border-right-color: hsl(220 15% 20%);
+}

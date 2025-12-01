@@ -1,12 +1,13 @@
 import { createClient } from '@supabase/supabase-js';
 
 // Read from env variables
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || 'https://placeholder.supabase.co';
+const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY || 'placeholder-key';
 
-if (!supabaseUrl || !supabaseKey) {
-  throw new Error('Supabase credentials missing. Check .env file.');
-}
+// Note: We don't throw here anymore so the App component can render a proper error screen
+// if (!supabaseUrl || !supabaseKey) {
+//   throw new Error('Supabase credentials missing. Check .env file.');
+// }
 
 export const supabase = createClient(supabaseUrl, supabaseKey, {
   auth: {

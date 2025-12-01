@@ -13,6 +13,14 @@ import Analytics from "./pages/admin/Analytics";
 import Chat from "./pages/admin/Chat";
 import Portfolio from './pages/admin/Portfolio';
 import Alumni from './pages/admin/Alumni';
+import MemberLayout from '@/components/eyeq/MemberLayout';
+import AdminLayout from '@/components/eyeq/AdminLayout';
+import DashboardHome from './pages/member/DashboardHome';
+import Projects from './pages/member/Projects';
+import ProjectUpload from './pages/member/ProjectUpload';
+import LearningLog from './pages/member/LearningLog';
+import Profile from './pages/member/Profile';
+import AccessPortal from './pages/member/AccessPortal';
 import RequireAuth from '@/components/eyeq/RequireAuth';
 import Login from './pages/auth/Login';
 import SignUp from './pages/auth/SignUp';
@@ -65,33 +73,43 @@ const App = () => {
           <BrowserRouter>
             <Routes>
               <Route path="/" element={<Index />} />
-              <Route path="/admin/dashboard" element={<RequireAuth roles={["Admin"]}><Dashboard /></RequireAuth>} />
               <Route path="/login" element={<Login />} />
               <Route path="/signup" element={<SignUp />} />
+
+              {/* Member Routes */}
+              <Route path="/portal" element={<RequireAuth><AccessPortal /></RequireAuth>} />
+              <Route path="/dashboard" element={<RequireAuth><MemberLayout><DashboardHome /></MemberLayout></RequireAuth>} />
+              <Route path="/projects" element={<RequireAuth><MemberLayout><Projects /></MemberLayout></RequireAuth>} />
+              <Route path="/projects/new" element={<RequireAuth><MemberLayout><ProjectUpload /></MemberLayout></RequireAuth>} />
+              <Route path="/learning" element={<RequireAuth><MemberLayout><LearningLog /></MemberLayout></RequireAuth>} />
+              <Route path="/profile" element={<RequireAuth><MemberLayout><Profile /></MemberLayout></RequireAuth>} />
+
+              {/* Admin Routes */}
+              <Route path="/admin/dashboard" element={<RequireAuth roles={["Admin"]}><AdminLayout><Dashboard /></AdminLayout></RequireAuth>} />
               <Route
                 path="/admin/members"
-                element={<RequireAuth roles={["Admin"]}><MemberApproval /></RequireAuth>}
+                element={<RequireAuth roles={["Admin"]}><AdminLayout><MemberApproval /></AdminLayout></RequireAuth>}
               />
-              <Route path="/admin/members/:id" element={<RequireAuth roles={["Admin"]}><MemberProfile /></RequireAuth>} />
+              <Route path="/admin/members/:id" element={<RequireAuth roles={["Admin"]}><AdminLayout><MemberProfile /></AdminLayout></RequireAuth>} />
               <Route
                 path="/admin/events"
-                element={<RequireAuth roles={["Admin"]}><Events /></RequireAuth>}
+                element={<RequireAuth roles={["Admin"]}><AdminLayout><Events /></AdminLayout></RequireAuth>}
               />
               <Route
                 path="/admin/analytics"
-                element={<RequireAuth roles={["Admin"]}><Analytics /></RequireAuth>}
+                element={<RequireAuth roles={["Admin"]}><AdminLayout><Analytics /></AdminLayout></RequireAuth>}
               />
               <Route
                 path="/admin/chat"
-                element={<RequireAuth roles={["Admin"]}><Chat /></RequireAuth>}
+                element={<RequireAuth roles={["Admin"]}><AdminLayout><Chat /></AdminLayout></RequireAuth>}
               />
               <Route
                 path="/admin/portfolio"
-                element={<RequireAuth roles={["Admin"]}><Portfolio /></RequireAuth>}
+                element={<RequireAuth roles={["Admin"]}><AdminLayout><Portfolio /></AdminLayout></RequireAuth>}
               />
               <Route
                 path="/admin/alumni"
-                element={<RequireAuth roles={["Admin"]}><Alumni /></RequireAuth>}
+                element={<RequireAuth roles={["Admin"]}><AdminLayout><Alumni /></AdminLayout></RequireAuth>}
               />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />

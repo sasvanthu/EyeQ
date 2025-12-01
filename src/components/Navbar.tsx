@@ -48,7 +48,27 @@ const Navbar = ({ className }: NavbarProps) => {
               </div>
             </button>
           </Link>
+
           <div className="w-px h-8 bg-white/20"></div>
+
+          <RouterLink to="/portal" onClick={() => setIsMobileMenuOpen(false)}>
+            <button className="nav-animated-button group">
+              <div className="nav-outline"></div>
+              <div className="nav-button-content">
+                <p className="nav-text">
+                  <span style={{ '--i': 0 } as React.CSSProperties}>M</span>
+                  <span style={{ '--i': 1 } as React.CSSProperties}>e</span>
+                  <span style={{ '--i': 2 } as React.CSSProperties}>m</span>
+                  <span style={{ '--i': 3 } as React.CSSProperties}>b</span>
+                  <span style={{ '--i': 4 } as React.CSSProperties}>e</span>
+                  <span style={{ '--i': 5 } as React.CSSProperties}>r</span>
+                </p>
+              </div>
+            </button>
+          </RouterLink>
+
+          <div className="w-px h-8 bg-white/20"></div>
+
           <RouterLink to="/admin/dashboard" onClick={() => setIsMobileMenuOpen(false)}>
             <button className="nav-animated-button group">
               <div className="nav-outline"></div>
@@ -63,6 +83,9 @@ const Navbar = ({ className }: NavbarProps) => {
               </div>
             </button>
           </RouterLink>
+
+          <div className="w-px h-8 bg-white/20"></div>
+
           <Link to="about" smooth={true} duration={500}>
             <button className="nav-animated-button group">
               <div className="nav-outline"></div>
@@ -77,7 +100,9 @@ const Navbar = ({ className }: NavbarProps) => {
               </div>
             </button>
           </Link>
+
           <div className="w-px h-8 bg-white/20"></div>
+
           <Link to="contact" smooth={true} duration={500}>
             <button className="nav-animated-button group">
               <div className="nav-outline"></div>
@@ -97,20 +122,20 @@ const Navbar = ({ className }: NavbarProps) => {
         </div>
 
         <div className="md:hidden">
-          <motion.button 
+          <motion.button
             className="text-foreground p-2"
             onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
             whileTap={{ scale: 0.9 }}
           >
-            <svg 
-              xmlns="http://www.w3.org/2000/svg" 
-              width="24" 
-              height="24" 
-              viewBox="0 0 24 24" 
-              fill="none" 
-              stroke="currentColor" 
-              strokeWidth="2" 
-              strokeLinecap="round" 
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              width="24"
+              height="24"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
               strokeLinejoin="round"
             >
               <line x1="4" x2="20" y1="12" y2="12" />
@@ -124,36 +149,36 @@ const Navbar = ({ className }: NavbarProps) => {
       {/* Mobile Menu */}
       <AnimatePresence>
         {isMobileMenuOpen && (
-          <motion.div 
+          <motion.div
             className="fixed inset-0 z-40 bg-background/95 backdrop-blur-md flex flex-col items-center justify-center gap-8 md:hidden"
             initial={{ opacity: 0, y: -20 }}
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -20 }}
             transition={{ duration: 0.3 }}
           >
-            <motion.button 
+            <motion.button
               className="absolute top-4 right-4 text-foreground p-2"
               onClick={() => setIsMobileMenuOpen(false)}
               whileTap={{ scale: 0.9 }}
             >
-              <svg 
-                xmlns="http://www.w3.org/2000/svg" 
-                width="24" 
-                height="24" 
-                viewBox="0 0 24 24" 
-                fill="none" 
-                stroke="currentColor" 
-                strokeWidth="2" 
-                strokeLinecap="round" 
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                width="24"
+                height="24"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
                 strokeLinejoin="round"
               >
                 <line x1="18" y1="6" x2="6" y2="18" />
                 <line x1="6" y1="6" x2="18" y2="18" />
               </svg>
             </motion.button>
-            
+
             <Link to="home" smooth={true} duration={500} onClick={handleNavClick}>
-              <motion.button 
+              <motion.button
                 className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
@@ -161,26 +186,19 @@ const Navbar = ({ className }: NavbarProps) => {
                 Home
               </motion.button>
             </Link>
-            <Link to="about" smooth={true} duration={500} onClick={handleNavClick}>
-              <motion.button 
+
+            <RouterLink to="/portal" onClick={handleNavClick}>
+              <motion.button
                 className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
               >
-                About
+                Member
               </motion.button>
-            </Link>
-            <Link to="contact" smooth={true} duration={500} onClick={handleNavClick}>
-              <motion.button 
-                className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Contact Us
-              </motion.button>
-            </Link>
+            </RouterLink>
+
             <RouterLink to="/admin/dashboard" onClick={handleNavClick}>
-              <motion.button 
+              <motion.button
                 className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
                 whileHover={{ scale: 1.1 }}
                 whileTap={{ scale: 0.95 }}
@@ -188,6 +206,26 @@ const Navbar = ({ className }: NavbarProps) => {
                 Admin
               </motion.button>
             </RouterLink>
+
+            <Link to="about" smooth={true} duration={500} onClick={handleNavClick}>
+              <motion.button
+                className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                About
+              </motion.button>
+            </Link>
+
+            <Link to="contact" smooth={true} duration={500} onClick={handleNavClick}>
+              <motion.button
+                className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
+              >
+                Contact Us
+              </motion.button>
+            </Link>
           </motion.div>
         )}
       </AnimatePresence>
