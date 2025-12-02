@@ -3,6 +3,7 @@ import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { useEffect } from "react";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import Dashboard from "./pages/admin/Dashboard";
@@ -13,6 +14,8 @@ import Analytics from "./pages/admin/Analytics";
 import Chat from "./pages/admin/Chat";
 import Portfolio from './pages/admin/Portfolio';
 import Alumni from './pages/admin/Alumni';
+import Gallery from './pages/Gallery';
+import AdminGallery from './pages/admin/Gallery';
 import MemberLayout from '@/components/eyeq/MemberLayout';
 import AdminLayout from '@/components/eyeq/AdminLayout';
 import DashboardHome from './pages/member/DashboardHome';
@@ -21,11 +24,11 @@ import ProjectUpload from './pages/member/ProjectUpload';
 import LearningLog from './pages/member/LearningLog';
 import Profile from './pages/member/Profile';
 import AccessPortal from './pages/member/AccessPortal';
+import Leaderboard from './pages/member/Leaderboard';
 import RequireAuth from '@/components/eyeq/RequireAuth';
 import Login from './pages/auth/Login';
 import SignUp from './pages/auth/SignUp';
 import { AuthProvider } from "@/lib/auth";
-import { useEffect } from "react";
 import scrollFX from "@/lib/scrollFX";
 
 const queryClient = new QueryClient();
@@ -83,6 +86,7 @@ const App = () => {
               <Route path="/projects/new" element={<RequireAuth><MemberLayout><ProjectUpload /></MemberLayout></RequireAuth>} />
               <Route path="/learning" element={<RequireAuth><MemberLayout><LearningLog /></MemberLayout></RequireAuth>} />
               <Route path="/profile" element={<RequireAuth><MemberLayout><Profile /></MemberLayout></RequireAuth>} />
+              <Route path="/leaderboard" element={<RequireAuth><MemberLayout><Leaderboard /></MemberLayout></RequireAuth>} />
 
               {/* Admin Routes */}
               <Route path="/admin/dashboard" element={<RequireAuth roles={["Admin"]}><AdminLayout><Dashboard /></AdminLayout></RequireAuth>} />
@@ -111,6 +115,11 @@ const App = () => {
                 path="/admin/alumni"
                 element={<RequireAuth roles={["Admin"]}><AdminLayout><Alumni /></AdminLayout></RequireAuth>}
               />
+              <Route
+                path="/admin/gallery"
+                element={<RequireAuth roles={["Admin"]}><AdminLayout><AdminGallery /></AdminLayout></RequireAuth>}
+              />
+              <Route path="/gallery" element={<Gallery />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

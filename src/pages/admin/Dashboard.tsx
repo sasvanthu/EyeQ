@@ -1,40 +1,21 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, Calendar, CheckCircle, Users } from "lucide-react";
-import { mockStats, mockActivities, mockMemberGrowth } from '@/lib/mock-api';
-import { ResponsiveContainer, LineChart, Line, XAxis, Tooltip, CartesianGrid } from 'recharts';
-import { useNavigate } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { fetchMembers, fetchEvents, fetchAttendance } from '@/lib/supabase';
-
-type Member = { id: string; full_name?: string; email?: string; role?: string; is_approved?: boolean; joined_at?: string };
-type EventItem = { id: number; title?: string; date?: string };
-type AttendanceItem = { id: number; eventId: number; memberId: string; time?: string; member?: Member };
+import { fetchMembers, fetchEvents, fetchAllAttendance } from '@/lib/supabase';
+import { LineChart, Line, XAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const AdminDashboard = () => {
   const navigate = useNavigate();
-
-  const { data: supaMembers, isLoading: membersLoading } = useQuery<Member[]>({ queryKey: ['members'], queryFn: async () => await fetchMembers(), retry: false });
-  const { data: supaEvents, isLoading: eventsLoading } = useQuery<EventItem[]>({ queryKey: ['events'], queryFn: async () => await fetchEvents(), retry: false });
-  const { data: supaAttendance, isLoading: attendanceLoading } = useQuery<AttendanceItem[]>({
-    queryKey: ['attendance-logs'], queryFn: async () => {
-      // fetch last 50 attendance logs across events
-      const all: any[] = [];
-      const evs = await fetchEvents();
-      for (const ev of evs || []) {
-        const logs: any = await fetchAttendance(ev.id);
-        if (logs && logs.length) {
-          logs.forEach((l: any) => all.push({ ...l, event: ev.title }));
-        }
-      }
-      return all.sort((a, b) => new Date(b.time).getTime() - new Date(a.time).getTime()).slice(0, 50);
-    }, retry: false
-  });
+  const { data: supaMembers } = useQuery<any[]>({ queryKey: ['members'], queryFn: fetchMembers });
+  const { data: supaEvents } = useQuery<any[]>({ queryKey: ['events'], queryFn: fetchEvents });
+  const { data: supaAttendance } = useQuery<any[]>({ queryKey: ['attendance'], queryFn: fetchAllAttendance });
 
   // Calculate member growth from real data
   const memberActivityData = React.useMemo(() => {
-    if (!supaMembers) return mockMemberGrowth.map(m => ({ month: `M${m.month}`, members: m.members }));
+    if (!supaMembers) return [];
 
     const last6Months = Array.from({ length: 6 }, (_, i) => {
       const d = new Date();

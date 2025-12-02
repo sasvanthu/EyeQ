@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/components/eyeq/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { mockEvents, mockMembers, mockAttendanceLogs } from '@/lib/mock-api';
 import QRScanner from '@/components/QRScanner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchEvents, createEvent as supaCreateEvent, updateEvent as supaUpdateEvent, deleteEvent as supaDeleteEvent, fetchAttendance, markAttendance } from '@/lib/supabase';

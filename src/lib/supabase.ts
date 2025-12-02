@@ -128,3 +128,114 @@ export function subscribeToMessages(channelId: string = 'general', callback: (pa
 }
 
 export default supabase;
+
+// --- Gallery Functions ---
+
+export async function fetchAlbums() {
+  const { data, error } = await supabase
+    .from('albums')
+    .select('*')
+    .order('event_date', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function createAlbum(album: any) {
+  const { data, error } = await supabase.from('albums').insert([album]).select();
+  if (error) throw error;
+  return data?.[0];
+}
+
+export async function deleteAlbum(id: string) {
+  // First delete images from storage (optional, but good practice)
+  // For now, we rely on cascade delete in DB, but storage files remain.
+  // TODO: Implement storage cleanup trigger or manual cleanup.
+
+  const { error } = await supabase.from('albums').delete().eq('id', id);
+  if (error) throw error;
+  return true;
+}
+
+export async function fetchGalleryImages(albumId?: string) {
+  let query = supabase.from('gallery_images').select('*').order('created_at', { ascending: false });
+
+  if (albumId) {
+    query = query.eq('album_id', albumId);
+  }
+
+  const { data, error } = await query;
+  if (error) throw error;
+  return data;
+}
+
+export async function uploadGalleryImage(file: File, albumId: string) {
+  const fileExt = file.name.split('.').pop();
+  const fileName = `${Math.random()}.${fileExt}`;
+  const filePath = `${albumId}/${fileName}`;
+
+  const { error: uploadError } = await supabase.storage
+    .from('gallery')
+    .upload(filePath, file);
+
+  if (uploadError) throw uploadError;
+
+  const { data: { publicUrl } } = supabase.storage
+    .from('gallery')
+    .getPublicUrl(filePath);
+
+  const { data, error: dbError } = await supabase
+    .from('gallery_images')
+    .insert([{ album_id: albumId, url: publicUrl }])
+    .select();
+
+  if (dbError) throw dbError;
+  return data?.[0];
+}
+
+export async function deleteGalleryImage(id: string, url: string) {
+  // Extract path from URL to delete from storage
+  // URL format: .../storage/v1/object/public/gallery/albumId/filename
+  const path = url.split('/gallery/')[1];
+
+  if (path) {
+    await supabase.storage.from('gallery').remove([path]);
+  }
+
+  const { error } = await supabase.from('gallery_images').delete().eq('id', id);
+  if (error) throw error;
+  return true;
+}
+
+// --- Leaderboard Functions ---
+
+export async function fetchLeaderboard() {
+  // If the view exists
+  const { data, error } = await supabase
+    .from('leaderboard')
+    .select('*')
+    .limit(50); // Top 50
+
+  if (error) {
+    // Fallback if view doesn't exist or fails: fetch profiles and count projects manually (less efficient)
+    console.warn("Leaderboard view fetch failed, falling back to manual aggregation", error);
+    const { data: profiles } = await supabase.from('profiles').select('id, full_name, avatar_url');
+    const { data: projects } = await supabase.from('projects').select('user_id');
+
+    if (!profiles || !projects) return [];
+
+    const stats = profiles.map(p => {
+      const count = projects.filter(proj => proj.user_id === p.id).length;
+      return {
+        user_id: p.id,
+        full_name: p.full_name,
+        avatar_url: p.avatar_url,
+        project_count: count,
+        score: count * 10 // Simple score logic
+      };
+    });
+
+    return stats.sort((a, b) => b.score - a.score);
+  }
+
+  return data;
+}

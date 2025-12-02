@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AdminLayout from '@/components/eyeq/AdminLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { ScrollArea } from '@/components/ui/scroll-area';
@@ -8,13 +8,16 @@ import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/lib/auth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { fetchMessages, sendMessage, subscribeToMessages } from '@/lib/supabase';
-import { Send, Hash, Volume2, MessageSquare } from 'lucide-react';
+import { Send, Hash, Volume2, MessageSquare, Sparkles } from 'lucide-react';
+import { GoogleGenerativeAI } from '@google/generative-ai';
+import { toast } from 'sonner';
 
 const CHANNELS = [
     { id: 'general', name: 'General', icon: Hash },
     { id: 'announcements', name: 'Announcements', icon: Volume2 },
     { id: 'tech-talk', name: 'Tech Talk', icon: Hash },
     { id: 'random', name: 'Random', icon: Hash },
+    { id: 'gemini', name: 'Gemini Bot', icon: Sparkles },
 ];
 
 const Chat: React.FC = () => {
@@ -23,13 +26,20 @@ const Chat: React.FC = () => {
     const [activeChannel, setActiveChannel] = useState('general');
     const [newMessage, setNewMessage] = useState('');
     const scrollRef = useRef<HTMLDivElement>(null);
+    const [geminiMessages, setGeminiMessages] = useState<any[]>([]);
+    const [isGeminiTyping, setIsGeminiTyping] = useState(false);
 
-    const { data: messages = [], isLoading } = useQuery({
+    const { data: supabaseMessages = [], isLoading } = useQuery({
         queryKey: ['messages', activeChannel],
         queryFn: () => fetchMessages(activeChannel),
+        enabled: activeChannel !== 'gemini',
     });
 
+    const messages = activeChannel === 'gemini' ? geminiMessages : supabaseMessages;
+
     useEffect(() => {
+        if (activeChannel === 'gemini') return;
+
         // Subscribe to real-time changes
         const subscription = subscribeToMessages(activeChannel, (payload) => {
             // Optimistically update or invalidate query
@@ -46,16 +56,77 @@ const Chat: React.FC = () => {
         if (scrollRef.current) {
             scrollRef.current.scrollIntoView({ behavior: 'smooth' });
         }
-    }, [messages]);
+    }, [messages, isGeminiTyping]);
 
     const sendMutation = useMutation({
         mutationFn: async () => {
             if (!user || !newMessage.trim()) return;
-            await sendMessage(newMessage, activeChannel, user.id);
+
+            if (activeChannel === 'gemini') {
+                const userMsg = {
+                    id: Date.now().toString(),
+                    content: newMessage,
+                    sender_id: user.id,
+                    created_at: new Date().toISOString(),
+                    members: {
+                        full_name: user.user_metadata?.full_name || 'You',
+                        avatar_url: user.user_metadata?.avatar_url,
+                    }
+                };
+                setGeminiMessages(prev => [...prev, userMsg]);
+                setNewMessage('');
+                setIsGeminiTyping(true);
+
+                try {
+                    const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
+                    if (!apiKey) {
+                        throw new Error("Gemini API key not found");
+                    }
+
+                    const genAI = new GoogleGenerativeAI(apiKey);
+                    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+
+                    const result = await model.generateContent(newMessage);
+                    const response = await result.response;
+                    const text = response.text();
+
+                    const botMsg = {
+                        id: (Date.now() + 1).toString(),
+                        content: text,
+                        sender_id: 'gemini-bot',
+                        created_at: new Date().toISOString(),
+                        members: {
+                            full_name: 'Gemini',
+                            avatar_url: 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg',
+                        }
+                    };
+                    setGeminiMessages(prev => [...prev, botMsg]);
+                } catch (error) {
+                    console.error("Gemini Error:", error);
+                    toast.error("Failed to get response from Gemini. Check API Key.");
+                    const errorMsg = {
+                        id: (Date.now() + 1).toString(),
+                        content: "I'm having trouble connecting right now. Please check your configuration.",
+                        sender_id: 'gemini-bot',
+                        created_at: new Date().toISOString(),
+                        members: {
+                            full_name: 'Gemini',
+                            avatar_url: 'https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg',
+                        }
+                    };
+                    setGeminiMessages(prev => [...prev, errorMsg]);
+                } finally {
+                    setIsGeminiTyping(false);
+                }
+            } else {
+                await sendMessage(newMessage, activeChannel, user.id);
+            }
         },
         onSuccess: () => {
-            setNewMessage('');
-            queryClient.invalidateQueries({ queryKey: ['messages', activeChannel] });
+            if (activeChannel !== 'gemini') {
+                setNewMessage('');
+                queryClient.invalidateQueries({ queryKey: ['messages', activeChannel] });
+            }
         },
     });
 
@@ -112,18 +183,24 @@ const Chat: React.FC = () => {
                     <Card className="flex-1 flex flex-col p-0 overflow-hidden border-border bg-card">
                         {/* Header */}
                         <div className="p-4 border-b border-border bg-muted/20 flex items-center gap-2">
-                            <Hash className="w-5 h-5 text-muted-foreground" />
+                            {activeChannel === 'gemini' ? (
+                                <Sparkles className="w-5 h-5 text-amber-500" />
+                            ) : (
+                                <Hash className="w-5 h-5 text-muted-foreground" />
+                            )}
                             <h3 className="font-semibold text-lg">{CHANNELS.find(c => c.id === activeChannel)?.name}</h3>
                         </div>
 
                         {/* Messages */}
                         <ScrollArea className="flex-1 p-4 bg-background/30">
                             <div className="space-y-4">
-                                {isLoading ? (
+                                {isLoading && activeChannel !== 'gemini' ? (
                                     <div className="text-center text-muted-foreground">Loading messages...</div>
-                                ) : messages.length === 0 ? (
+                                ) : messages.length === 0 && !isGeminiTyping ? (
                                     <div className="text-center text-muted-foreground py-10">
-                                        No messages yet. Be the first to say hello!
+                                        {activeChannel === 'gemini'
+                                            ? "Start a conversation with Gemini!"
+                                            : "No messages yet. Be the first to say hello!"}
                                     </div>
                                 ) : (
                                     messages.map((msg: any) => {
@@ -147,7 +224,7 @@ const Chat: React.FC = () => {
                                                         </span>
                                                     </div>
                                                     <div
-                                                        className={`px-3 py-2 rounded-lg text-sm shadow-sm ${isMe
+                                                        className={`px-3 py-2 rounded-lg text-sm shadow-sm whitespace-pre-wrap ${isMe
                                                             ? 'bg-amber-500 text-black rounded-tr-none font-medium'
                                                             : 'bg-muted text-foreground rounded-tl-none border border-border'
                                                             }`}
@@ -158,6 +235,17 @@ const Chat: React.FC = () => {
                                             </div>
                                         );
                                     })
+                                )}
+                                {isGeminiTyping && (
+                                    <div className="flex gap-3">
+                                        <Avatar className="w-8 h-8 border border-border">
+                                            <AvatarImage src="https://www.gstatic.com/lamda/images/gemini_sparkle_v002_d4735304ff6292a690345.svg" />
+                                            <AvatarFallback>G</AvatarFallback>
+                                        </Avatar>
+                                        <div className="bg-muted text-foreground rounded-lg rounded-tl-none border border-border px-3 py-2 text-sm">
+                                            <span className="animate-pulse">Thinking...</span>
+                                        </div>
+                                    </div>
                                 )}
                                 <div ref={scrollRef} />
                             </div>
@@ -173,7 +261,7 @@ const Chat: React.FC = () => {
                                     placeholder={`Message #${CHANNELS.find(c => c.id === activeChannel)?.name}`}
                                     className="bg-background border-border focus-visible:ring-amber-500"
                                 />
-                                <Button onClick={handleSend} disabled={!newMessage.trim() || sendMutation.isPending} className="bg-amber-500 hover:bg-amber-600 text-black">
+                                <Button onClick={handleSend} disabled={!newMessage.trim() || sendMutation.isPending || isGeminiTyping} className="bg-amber-500 hover:bg-amber-600 text-black">
                                     <Send className="w-4 h-4" />
                                 </Button>
                             </div>

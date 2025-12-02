@@ -58,6 +58,11 @@ const MemberLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
                                         <Link to="/profile">My Profile</Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild>
+                                        <Link to="/leaderboard">Leaderboard</Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
                             </SidebarMenu>
                         </SidebarGroup>
                     </SidebarContent>
