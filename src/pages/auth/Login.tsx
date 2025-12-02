@@ -27,7 +27,21 @@ const Login: React.FC = () => {
         throw error;
       }
 
-      navigate('/');
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (user) {
+        const { data: profile } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', user.id)
+          .single();
+
+        if (profile?.role === 'admin') {
+          navigate('/admin/dashboard');
+        } else {
+          navigate('/dashboard');
+        }
+      }
     } catch (error: any) {
       toast({
         title: "Login Failed",
@@ -50,8 +64,8 @@ const Login: React.FC = () => {
             <Button type='submit' disabled={loading}>
               {loading ? 'Logging in...' : 'Login'}
             </Button>
-            <Button variant='ghost' type="button" onClick={() => navigate('/signup')}>
-              Sign Up
+            <Button variant='ghost' type="button" onClick={() => navigate('/join-us')}>
+              Request to Join
             </Button>
           </div>
           <div className="text-center mt-4">

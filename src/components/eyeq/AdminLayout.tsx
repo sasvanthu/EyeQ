@@ -52,6 +52,11 @@ const AdminLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => 
                                 </SidebarMenuItem>
                                 <SidebarMenuItem>
                                     <SidebarMenuButton asChild className="hover:bg-amber-500/10 hover:text-amber-500">
+                                        <Link to="/admin/users">Members</Link>
+                                    </SidebarMenuButton>
+                                </SidebarMenuItem>
+                                <SidebarMenuItem>
+                                    <SidebarMenuButton asChild className="hover:bg-amber-500/10 hover:text-amber-500">
                                         <Link to="/admin/events">Events</Link>
                                     </SidebarMenuButton>
                                 </SidebarMenuItem>

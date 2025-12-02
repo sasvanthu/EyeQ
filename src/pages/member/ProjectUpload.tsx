@@ -1,17 +1,43 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Upload, Github, Image as ImageIcon, X, Eye } from 'lucide-react';
+import { Upload, Github, Image as ImageIcon, X, Eye, Loader2 } from 'lucide-react';
 import GlassCard from '@/components/eyeq/GlassCard';
 import NeonButton from '@/components/eyeq/NeonButton';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
+import { useAuth } from '@/lib/auth';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
+import { createProject } from '@/lib/supabase';
+import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 const ProjectUpload = () => {
+    const { user } = useAuth();
+    const navigate = useNavigate();
+    const queryClient = useQueryClient();
+
+    const [title, setTitle] = useState('');
+    const [description, setDescription] = useState('');
     const [tags, setTags] = useState<string[]>([]);
     const [currentTag, setCurrentTag] = useState('');
-    const [projectType, setProjectType] = useState<'solo' | 'team'>('solo');
+    const [githubUrl, setGithubUrl] = useState('');
+    const [demoUrl, setDemoUrl] = useState('');
+    const [projectType, setProjectType] = useState<'Solo' | 'Team'>('Solo');
+
+    const createProjectMutation = useMutation({
+        mutationFn: createProject,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['projects'] });
+            queryClient.invalidateQueries({ queryKey: ['user-projects'] });
+            toast.success('Project uploaded successfully!');
+            navigate('/projects');
+        },
+        onError: (error) => {
+            toast.error(`Failed to upload project: ${error.message}`);
+        }
+    });
 
     const handleAddTag = (e: React.KeyboardEvent) => {
         if (e.key === 'Enter' && currentTag.trim()) {
@@ -25,6 +51,25 @@ const ProjectUpload = () => {
 
     const removeTag = (tagToRemove: string) => {
         setTags(tags.filter(tag => tag !== tagToRemove));
+    };
+
+    const handleSubmit = () => {
+        if (!title || !description) {
+            toast.error("Title and description are required");
+            return;
+        }
+        if (!user) return;
+
+        createProjectMutation.mutate({
+            user_id: user.id,
+            title,
+            description,
+            tags, // Ensure DB supports array or JSONB for tags
+            github_url: githubUrl,
+            // demo_url: demoUrl, // Add to schema if missing
+            type: projectType,
+            image_url: null // Placeholder or implement image upload later
+        });
     };
 
     return (
@@ -43,24 +88,23 @@ const ProjectUpload = () => {
                 <GlassCard className="p-6 space-y-6">
                     <div className="space-y-2">
                         <Label htmlFor="title">Project Title</Label>
-                        <Input id="title" placeholder="e.g. AI Vision Assistant" className="bg-black/20 border-white/10 focus:border-cyan-500/50" />
+                        <Input
+                            id="title"
+                            value={title}
+                            onChange={(e) => setTitle(e.target.value)}
+                            placeholder="e.g. AI Vision Assistant"
+                            className="bg-black/20 border-white/10 focus:border-cyan-500/50"
+                        />
                     </div>
 
                     <div className="space-y-2">
                         <Label htmlFor="description">Description</Label>
                         <Textarea
                             id="description"
+                            value={description}
+                            onChange={(e) => setDescription(e.target.value)}
                             placeholder="Describe what your project does..."
                             className="min-h-[100px] bg-black/20 border-white/10 focus:border-cyan-500/50"
-                        />
-                    </div>
-
-                    <div className="space-y-2">
-                        <Label htmlFor="learned">What I Learned</Label>
-                        <Textarea
-                            id="learned"
-                            placeholder="Key takeaways, challenges overcome..."
-                            className="min-h-[80px] bg-black/20 border-white/10 focus:border-purple-500/50"
                         />
                     </div>
 
@@ -88,14 +132,26 @@ const ProjectUpload = () => {
                             <Label htmlFor="github">GitHub Repository</Label>
                             <div className="relative">
                                 <Github className="absolute left-3 top-3 text-gray-500" size={16} />
-                                <Input id="github" placeholder="https://github.com/..." className="pl-10 bg-black/20 border-white/10 focus:border-cyan-500/50" />
+                                <Input
+                                    id="github"
+                                    value={githubUrl}
+                                    onChange={(e) => setGithubUrl(e.target.value)}
+                                    placeholder="https://github.com/..."
+                                    className="pl-10 bg-black/20 border-white/10 focus:border-cyan-500/50"
+                                />
                             </div>
                         </div>
                         <div className="space-y-2">
                             <Label htmlFor="demo">Live Demo Link</Label>
                             <div className="relative">
                                 <Eye className="absolute left-3 top-3 text-gray-500" size={16} />
-                                <Input id="demo" placeholder="https://..." className="pl-10 bg-black/20 border-white/10 focus:border-cyan-500/50" />
+                                <Input
+                                    id="demo"
+                                    value={demoUrl}
+                                    onChange={(e) => setDemoUrl(e.target.value)}
+                                    placeholder="https://..."
+                                    className="pl-10 bg-black/20 border-white/10 focus:border-cyan-500/50"
+                                />
                             </div>
                         </div>
                     </div>
@@ -104,19 +160,19 @@ const ProjectUpload = () => {
                         <Label>Project Type</Label>
                         <div className="flex gap-4">
                             <button
-                                onClick={() => setProjectType('solo')}
-                                className={`flex-1 py-3 rounded-xl border transition-all ${projectType === 'solo'
-                                        ? 'bg-cyan-500/10 border-cyan-500 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]'
-                                        : 'bg-black/20 border-white/10 text-gray-400 hover:bg-white/5'
+                                onClick={() => setProjectType('Solo')}
+                                className={`flex-1 py-3 rounded-xl border transition-all ${projectType === 'Solo'
+                                    ? 'bg-cyan-500/10 border-cyan-500 text-cyan-400 shadow-[0_0_15px_rgba(6,182,212,0.2)]'
+                                    : 'bg-black/20 border-white/10 text-gray-400 hover:bg-white/5'
                                     }`}
                             >
                                 Solo Project
                             </button>
                             <button
-                                onClick={() => setProjectType('team')}
-                                className={`flex-1 py-3 rounded-xl border transition-all ${projectType === 'team'
-                                        ? 'bg-purple-500/10 border-purple-500 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
-                                        : 'bg-black/20 border-white/10 text-gray-400 hover:bg-white/5'
+                                onClick={() => setProjectType('Team')}
+                                className={`flex-1 py-3 rounded-xl border transition-all ${projectType === 'Team'
+                                    ? 'bg-purple-500/10 border-purple-500 text-purple-400 shadow-[0_0_15px_rgba(168,85,247,0.2)]'
+                                    : 'bg-black/20 border-white/10 text-gray-400 hover:bg-white/5'
                                     }`}
                             >
                                 Team Project
@@ -125,9 +181,10 @@ const ProjectUpload = () => {
                     </div>
 
                     <div className="pt-4 flex justify-end gap-3">
-                        <NeonButton variant="ghost">Cancel</NeonButton>
-                        <NeonButton className="w-full sm:w-auto">
-                            <Upload size={18} className="mr-2" /> Publish Project
+                        <NeonButton variant="ghost" onClick={() => navigate('/projects')}>Cancel</NeonButton>
+                        <NeonButton className="w-full sm:w-auto" onClick={handleSubmit} disabled={createProjectMutation.isPending}>
+                            {createProjectMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Upload size={18} className="mr-2" />}
+                            Publish Project
                         </NeonButton>
                     </div>
                 </GlassCard>
@@ -152,17 +209,17 @@ const ProjectUpload = () => {
                                     <ImageIcon size={48} className="opacity-50" />
                                 </div>
                                 <div className="absolute top-3 right-3">
-                                    <Badge className={`${projectType === 'solo' ? 'bg-cyan-500' : 'bg-purple-500'} text-white border-0`}>
-                                        {projectType === 'solo' ? 'Solo' : 'Team'}
+                                    <Badge className={`${projectType === 'Solo' ? 'bg-cyan-500' : 'bg-purple-500'} text-white border-0`}>
+                                        {projectType}
                                     </Badge>
                                 </div>
                             </div>
 
                             <div className="p-5 space-y-4">
                                 <div>
-                                    <h3 className="text-xl font-bold text-white mb-1">Project Title Preview</h3>
+                                    <h3 className="text-xl font-bold text-white mb-1">{title || 'Project Title Preview'}</h3>
                                     <p className="text-sm text-gray-400 line-clamp-2">
-                                        Your project description will appear here. It should be concise and engaging to attract views.
+                                        {description || 'Your project description will appear here. It should be concise and engaging to attract views.'}
                                     </p>
                                 </div>
 

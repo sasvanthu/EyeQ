@@ -63,9 +63,9 @@ export async function markAttendance(eventId: number, memberId: number) {
 
 export async function fetchMembers() {
   const { data, error } = await supabase
-    .from('members')
+    .from('profiles')
     .select('*')
-    .order('joined_at', { ascending: false });
+    .order('created_at', { ascending: false });
 
   if (error) throw error;
   if (error) throw error;
@@ -74,7 +74,7 @@ export async function fetchMembers() {
 
 export async function fetchMember(id: string) {
   const { data, error } = await supabase
-    .from('members')
+    .from('profiles')
     .select('*')
     .eq('id', id)
     .single();
@@ -84,21 +84,40 @@ export async function fetchMember(id: string) {
 }
 
 export async function createMember(member: any) {
-  const { data, error } = await supabase.from('members').insert([member]).select();
+  const { data, error } = await supabase.from('profiles').insert([member]).select();
   if (error) throw error;
   return data?.[0];
 }
 
 export async function updateMember(id: string, payload: any) {
-  const { data, error } = await supabase.from('members').update(payload).eq('id', id).select();
+  const { data, error } = await supabase.from('profiles').update(payload).eq('id', id).select();
   if (error) throw error;
   return data?.[0];
 }
 
 export async function deleteMember(id: string) {
-  const { error } = await supabase.from('members').delete().eq('id', id);
+  const { error } = await supabase.from('profiles').delete().eq('id', id);
   if (error) throw error;
   return true;
+}
+
+export async function fetchRequests() {
+  const { data, error } = await supabase
+    .from('requests')
+    .select('*')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function updateRequestStatus(id: number, status: 'approved' | 'rejected') {
+  const { data, error } = await supabase
+    .from('requests')
+    .update({ status })
+    .eq('id', id)
+    .select();
+  if (error) throw error;
+  return data?.[0];
 }
 
 export async function fetchMessages(channelId: string = 'general') {
@@ -238,4 +257,65 @@ export async function fetchLeaderboard() {
   }
 
   return data;
+}
+
+// --- Member Dashboard Functions ---
+
+export async function fetchUserProjects(userId: string) {
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function fetchUserLogs(userId: string) {
+  const { data, error } = await supabase
+    .from('learning_logs')
+    .select('*')
+    .eq('user_id', userId)
+    .order('date', { ascending: false });
+
+  if (error) {
+    console.warn("Learning logs fetch failed", error);
+    return [];
+  }
+  return data;
+}
+
+export async function fetchUserNotifications(userId: string) {
+  const { data, error } = await supabase
+    .from('notifications')
+    .select('*')
+    .eq('user_id', userId)
+    .order('created_at', { ascending: false })
+    .limit(10);
+  if (error) {
+    console.warn("Notifications fetch failed", error);
+    return [];
+  }
+  return data;
+}
+
+export async function fetchProjects() {
+  const { data, error } = await supabase
+    .from('projects')
+    .select('*, profiles(full_name, avatar_url)')
+    .order('created_at', { ascending: false });
+  if (error) throw error;
+  return data;
+}
+
+export async function createProject(project: any) {
+  const { data, error } = await supabase.from('projects').insert([project]).select();
+  if (error) throw error;
+  return data?.[0];
+}
+
+export async function createLog(log: any) {
+  const { data, error } = await supabase.from('learning_logs').insert([log]).select();
+  if (error) throw error;
+  return data?.[0];
 }

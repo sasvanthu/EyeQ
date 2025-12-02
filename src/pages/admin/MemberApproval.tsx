@@ -1,239 +1,178 @@
-import React, { useMemo, useState } from 'react';
+import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchMembers, updateMember, deleteMember } from '@/lib/supabase';
+import { fetchRequests, updateRequestStatus, createMember } from '@/lib/supabase';
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
+import { Badge } from "@/components/ui/badge";
+import { Check, X, Loader2, UserPlus } from "lucide-react";
+import { useToast } from "@/components/ui/use-toast";
 import AdminLayout from '@/components/eyeq/AdminLayout';
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Table, TableBody, TableCell, TableHead, TableRow, TableHeader } from '@/components/ui/table';
-import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogTrigger, DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { Input } from '@/components/ui/input';
-import { Check, X, Search, FileDown } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-import { useToast } from '@/components/ui/use-toast';
 
-const ApproveRoleSelect: React.FC<{ member: any; onApprove: (role?: string) => void }> = ({ member, onApprove }) => {
-  const [selected, setSelected] = useState(member.role || 'Member');
-  return (
-    <div className='grid grid-cols-1 gap-4 mt-4'>
-      <div className="grid gap-2">
-        <label className="text-sm font-medium">Assign Role</label>
-        <select
-          value={selected}
-          onChange={(e) => setSelected(e.target.value)}
-          className='flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50'
-        >
-          <option>Member</option>
-          <option>PR</option>
-          <option>Events</option>
-          <option>Tech Lead</option>
-          <option>Vice President</option>
-          <option>Admin</option>
-        </select>
-      </div>
-      <div className='flex gap-2 justify-end'>
-        <Button
-          onClick={() => onApprove(selected)}
-          className="bg-amber-500 hover:bg-amber-600 text-black font-semibold"
-        >
-          Confirm Approval
-        </Button>
-      </div>
-    </div>
-  );
-};
-
-const MemberApproval: React.FC = () => {
-  const queryClient = useQueryClient();
+const MemberApproval = () => {
   const { toast } = useToast();
-  const { data: membersData, isLoading } = useQuery({ queryKey: ['members'], queryFn: fetchMembers, retry: false });
-  const members = membersData ?? [];
-  const [filter, setFilter] = useState('');
+  const queryClient = useQueryClient();
 
-  const pending = useMemo(() => members.filter((m: any) => !m.is_approved), [members]);
-
-  const navigate = useNavigate();
-
-  const approveMutation = useMutation({
-    mutationFn: (payload: any) => updateMember(payload.id, payload),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['members'] });
-      toast({ title: "Member Approved", description: "The member has been approved successfully." });
-    },
-    onError: (err: any) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    }
+  const { data: requests, isLoading } = useQuery({
+    queryKey: ['requests'],
+    queryFn: fetchRequests,
   });
 
-  const approve = async (id: string, role?: string) => {
-    await approveMutation.mutateAsync({ id, is_approved: true, role });
-  };
+  const updateStatusMutation = useMutation({
+    mutationFn: async ({ id, status, requestData }: { id: number, status: 'approved' | 'rejected', requestData?: any }) => {
+      // 1. Update request status
+      await updateRequestStatus(id, status);
 
-  const deleteMutation = useMutation({
-    mutationFn: (id: string) => deleteMember(id),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['members'] });
-      toast({ title: "Member Rejected", description: "The member request has been rejected." });
+      // 2. If approved, create a profile (Note: Auth user creation is separate)
+      if (status === 'approved' && requestData) {
+        // We can't create the Auth User here without Service Role, so we just create the profile
+        // The Admin must manually create the Auth User in Supabase Dashboard to match this email/id
+        // OR we assume the Auth User will be created later and linked.
+
+        // Actually, 'profiles' relies on 'id' being the Auth ID. 
+        // Since we don't have the Auth ID yet, we CANNOT create the profile row correctly linked to auth.
+        // So, we will just mark the request as approved. 
+        // The workflow should be: Admin sees approved request -> Admin goes to Supabase -> Creates User -> User ID is generated -> Admin creates Profile (or User fills it on first login).
+
+        // REVISED FLOW: 
+        // 1. Admin clicks Approve.
+        // 2. Request marked 'approved'.
+        // 3. Admin manually invites user or creates account.
+
+        return;
+      }
     },
-    onError: (err: any) => {
-      toast({ title: "Error", description: err.message, variant: "destructive" });
-    }
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+      toast({
+        title: "Status Updated",
+        description: "The request has been processed.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
   });
 
-  const reject = async (id: string) => { await deleteMutation.mutateAsync(id); };
-
-  const autoAssignRoles = () => {
-    toast({ title: "Auto-Assign", description: "Batch auto-assign is not yet implemented." });
+  const handleAction = (id: number, status: 'approved' | 'rejected', request: any) => {
+    updateStatusMutation.mutate({ id, status, requestData: request });
   };
 
-  const approveAll = async () => {
-    toast({ title: "Approve All", description: "Batch approve is not yet implemented." });
-  };
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center h-full">
+        <Loader2 className="h-8 w-8 animate-spin" />
+      </div>
+    );
+  }
+
+  const pendingRequests = requests?.filter((r: any) => r.status === 'pending') || [];
+  const processedRequests = requests?.filter((r: any) => r.status !== 'pending') || [];
 
   return (
-    <AdminLayout>
-      <div className="space-y-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-          <div>
-            <h3 className="text-3xl font-bold tracking-tight">Member Approvals</h3>
-            <p className="text-muted-foreground mt-1">Review and manage incoming member applications.</p>
-          </div>
-          <div className="flex items-center gap-2">
-            <div className="relative">
-              <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-              <Input
-                value={filter}
-                onChange={(e) => setFilter(e.target.value)}
-                placeholder="Search applicants..."
-                className="pl-9 w-[250px] bg-card border-border"
-              />
-            </div>
-            <Button variant="outline" className="gap-2">
-              <FileDown className="h-4 w-4" />
-              Export
-            </Button>
-          </div>
-        </div>
+    <div className="space-y-6">
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Member Requests</h2>
+        <p className="text-muted-foreground">Review and manage applications to join the club.</p>
+      </div>
 
-        <div className="grid gap-4 md:grid-cols-4">
-          <Card className="md:col-span-3 border-border bg-card">
+      {pendingRequests.length === 0 && (
+        <Card className="bg-muted/50 border-dashed">
+          <CardContent className="flex flex-col items-center justify-center py-12 text-center">
+            <UserPlus className="h-12 w-12 text-muted-foreground mb-4" />
+            <h3 className="text-lg font-semibold">No Pending Requests</h3>
+            <p className="text-muted-foreground">All caught up! Check back later for new applicants.</p>
+          </CardContent>
+        </Card>
+      )}
+
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+        {pendingRequests.map((request: any) => (
+          <Card key={request.id} className="relative overflow-hidden border-l-4 border-l-yellow-500">
             <CardHeader>
-              <CardTitle>Pending Requests</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <Table>
-                <TableHeader>
-                  <TableRow className="hover:bg-transparent border-border">
-                    <TableHead>Name</TableHead>
-                    <TableHead>Email</TableHead>
-                    <TableHead>Requested Role</TableHead>
-                    <TableHead>Joined Date</TableHead>
-                    <TableHead className="text-right">Actions</TableHead>
-                  </TableRow>
-                </TableHeader>
-                <TableBody>
-                  {isLoading ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">Loading requests...</TableCell>
-                    </TableRow>
-                  ) : pending.length === 0 ? (
-                    <TableRow>
-                      <TableCell colSpan={5} className="text-center py-8 text-muted-foreground">No pending approvals found.</TableCell>
-                    </TableRow>
-                  ) : (
-                    pending
-                      .filter((m: any) => (m.full_name || '').toLowerCase().includes(filter.toLowerCase()) || m.email.toLowerCase().includes(filter.toLowerCase()))
-                      .map((m: any) => (
-                        <TableRow key={m.id} className="border-border hover:bg-white/5">
-                          <TableCell className="font-medium">{m.full_name}</TableCell>
-                          <TableCell>{m.email}</TableCell>
-                          <TableCell>
-                            <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-500/10 text-amber-500 border border-amber-500/20">
-                              {m.role || 'Member'}
-                            </span>
-                          </TableCell>
-                          <TableCell>{new Date(m.joined_at).toLocaleDateString()}</TableCell>
-                          <TableCell className="text-right">
-                            <div className="flex items-center justify-end gap-2">
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-green-500 hover:text-green-400 hover:bg-green-500/10 border-green-500/20">
-                                    <Check className="h-4 w-4" />
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent className="bg-card border-border">
-                                  <DialogHeader>
-                                    <DialogTitle>Approve Member</DialogTitle>
-                                    <DialogDescription>Assign a role and confirm approval for <b>{m.full_name}</b>.</DialogDescription>
-                                    <ApproveRoleSelect member={m} onApprove={(role) => approve(m.id, role)} />
-                                  </DialogHeader>
-                                </DialogContent>
-                              </Dialog>
-
-                              <Dialog>
-                                <DialogTrigger asChild>
-                                  <Button size="sm" variant="outline" className="h-8 w-8 p-0 text-red-500 hover:text-red-400 hover:bg-red-500/10 border-red-500/20">
-                                    <X className="h-4 w-4" />
-                                  </Button>
-                                </DialogTrigger>
-                                <DialogContent className="bg-card border-border">
-                                  <DialogHeader>
-                                    <DialogTitle>Reject Application</DialogTitle>
-                                    <DialogDescription>
-                                      Are you sure you want to reject <b>{m.full_name}</b>? This action cannot be undone.
-                                    </DialogDescription>
-                                    <div className="mt-4 flex gap-2 justify-end">
-                                      <Button variant="ghost" onClick={() => { }}>Cancel</Button>
-                                      <Button variant="destructive" onClick={() => reject(m.id)}>Confirm Rejection</Button>
-                                    </div>
-                                  </DialogHeader>
-                                </DialogContent>
-                              </Dialog>
-
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => navigate(`/admin/members/${m.id}`)}
-                                className="h-8 text-xs"
-                              >
-                                View Profile
-                              </Button>
-                            </div>
-                          </TableCell>
-                        </TableRow>
-                      ))
-                  )}
-                </TableBody>
-              </Table>
-            </CardContent>
-          </Card>
-
-          <Card className="border-border bg-card h-fit">
-            <CardHeader>
-              <CardTitle className="text-lg">Quick Actions</CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-3">
-              <Button onClick={approveAll} className="w-full bg-amber-500 hover:bg-amber-600 text-black font-semibold">
-                Approve All Pending
-              </Button>
-              <Button onClick={autoAssignRoles} variant="outline" className="w-full border-border hover:bg-white/5">
-                Auto-Assign Roles
-              </Button>
-              <div className="pt-4 border-t border-border">
-                <p className="text-xs text-muted-foreground mb-2">Stats</p>
-                <div className="flex justify-between text-sm mb-1">
-                  <span>Pending</span>
-                  <span className="font-bold text-amber-500">{pending.length}</span>
+              <div className="flex justify-between items-start">
+                <div>
+                  <CardTitle>{request.full_name}</CardTitle>
+                  <CardDescription>{request.email}</CardDescription>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span>Total Members</span>
-                  <span className="font-bold">{members.length}</span>
+                <Badge variant="outline" className="bg-yellow-500/10 text-yellow-500 border-yellow-500/20">
+                  Pending
+                </Badge>
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="text-sm">
+                <p className="font-medium text-muted-foreground mb-1">Department</p>
+                <p>{request.department}</p>
+              </div>
+              <div className="text-sm">
+                <p className="font-medium text-muted-foreground mb-1">Skills</p>
+                <div className="flex flex-wrap gap-1">
+                  {request.skills?.map((skill: string, i: number) => (
+                    <Badge key={i} variant="secondary" className="text-xs">
+                      {skill}
+                    </Badge>
+                  ))}
                 </div>
+              </div>
+              <div className="text-sm">
+                <p className="font-medium text-muted-foreground mb-1">Reason for Joining</p>
+                <p className="text-muted-foreground italic">"{request.reason}"</p>
+              </div>
+
+              <div className="flex gap-2 pt-4">
+                <Button
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                  onClick={() => handleAction(request.id, 'approved', request)}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  <Check className="w-4 h-4 mr-2" /> Approve
+                </Button>
+                <Button
+                  variant="destructive"
+                  className="flex-1"
+                  onClick={() => handleAction(request.id, 'rejected', request)}
+                  disabled={updateStatusMutation.isPending}
+                >
+                  <X className="w-4 h-4 mr-2" /> Reject
+                </Button>
               </div>
             </CardContent>
           </Card>
-        </div>
+        ))}
       </div>
-    </AdminLayout>
+
+      {processedRequests.length > 0 && (
+        <div className="mt-12">
+          <h3 className="text-xl font-semibold mb-4">History</h3>
+          <div className="rounded-md border">
+            <div className="p-4 grid grid-cols-4 gap-4 font-medium border-b bg-muted/50">
+              <div>Name</div>
+              <div>Email</div>
+              <div>Status</div>
+              <div>Date</div>
+            </div>
+            {processedRequests.map((request: any) => (
+              <div key={request.id} className="p-4 grid grid-cols-4 gap-4 border-b last:border-0 items-center">
+                <div>{request.full_name}</div>
+                <div className="text-muted-foreground text-sm">{request.email}</div>
+                <div>
+                  <Badge variant={request.status === 'approved' ? 'default' : 'destructive'}>
+                    {request.status}
+                  </Badge>
+                </div>
+                <div className="text-muted-foreground text-sm">
+                  {new Date(request.created_at).toLocaleDateString()}
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+    </div>
   );
 };
 

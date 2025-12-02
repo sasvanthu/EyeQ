@@ -93,10 +93,5 @@ export const useAuth = () => {
 };
 
 // Backwards compatibility for existing code (temporary)
-export const currentUser = {
-  id: 1,
-  name: 'Guest',
-  email: 'guest@eyeq.club',
-  roles: ['Member'],
-};
+
 

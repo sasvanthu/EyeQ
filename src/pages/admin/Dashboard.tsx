@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, Calendar, CheckCircle, Users } from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
-import { fetchMembers, fetchEvents, fetchAllAttendance } from '@/lib/supabase';
+import { fetchMembers, fetchEvents, fetchAllAttendance, fetchRequests } from '@/lib/supabase';
 import { LineChart, Line, XAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const AdminDashboard = () => {
@@ -12,6 +12,7 @@ const AdminDashboard = () => {
   const { data: supaMembers } = useQuery<any[]>({ queryKey: ['members'], queryFn: fetchMembers });
   const { data: supaEvents } = useQuery<any[]>({ queryKey: ['events'], queryFn: fetchEvents });
   const { data: supaAttendance } = useQuery<any[]>({ queryKey: ['attendance'], queryFn: fetchAllAttendance });
+  const { data: supaRequests } = useQuery<any[]>({ queryKey: ['requests'], queryFn: fetchRequests });
 
   // Calculate member growth from real data
   const memberActivityData = React.useMemo(() => {
@@ -59,7 +60,7 @@ const AdminDashboard = () => {
             <CheckCircle className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{supaMembers ? supaMembers.filter((m) => !m.is_approved).length : 0}</div>
+            <div className="text-2xl font-bold">{supaRequests ? supaRequests.filter(r => r.status === 'pending').length : 0}</div>
             <p className="text-xs text-muted-foreground">
               Awaiting admin action
             </p>
@@ -83,7 +84,7 @@ const AdminDashboard = () => {
             <Users className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{supaMembers ? supaMembers.filter((m) => m.is_approved).length : 0}</div>
+            <div className="text-2xl font-bold">{supaMembers?.length ?? 0}</div>
             <p className="text-xs text-muted-foreground">
               +12% engagement
             </p>

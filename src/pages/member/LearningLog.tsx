@@ -1,27 +1,58 @@
 import React, { useState } from 'react';
 import { motion } from 'framer-motion';
-import { Flame, Calendar as CalendarIcon, Save, Share2, Plus, CheckCircle2 } from 'lucide-react';
+import { Flame, Calendar as CalendarIcon, Save, Share2, Plus, CheckCircle2, Loader2 } from 'lucide-react';
 import GlassCard from '@/components/eyeq/GlassCard';
 import NeonButton from '@/components/eyeq/NeonButton';
 import { Textarea } from '@/components/ui/textarea';
 import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
+import { useAuth } from '@/lib/auth';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { fetchUserLogs, createLog } from '@/lib/supabase';
+import { toast } from 'sonner';
+import { formatDistanceToNow } from 'date-fns';
 
 const LearningLog = () => {
+    const { user } = useAuth();
+    const queryClient = useQueryClient();
     const [logContent, setLogContent] = useState('');
     const [date, setDate] = useState<Date | undefined>(new Date());
 
-    // Mock data for heatmap
-    const activityData = Array.from({ length: 365 }).map((_, i) => ({
-        date: new Date(Date.now() - (364 - i) * 24 * 60 * 60 * 1000),
-        count: Math.random() > 0.7 ? Math.floor(Math.random() * 5) : 0,
-    }));
+    // Fetch Logs
+    const { data: logs, isLoading } = useQuery({
+        queryKey: ['user-logs', user?.id],
+        queryFn: () => fetchUserLogs(user?.id!),
+        enabled: !!user?.id,
+    });
 
-    const recentLogs = [
-        { id: 1, date: 'Today', content: 'Learned about React Context API and how to avoid prop drilling.', tags: ['React', 'State Management'] },
-        { id: 2, date: 'Yesterday', content: 'Built a simple REST API using Express and MongoDB.', tags: ['Node.js', 'Backend'] },
-        { id: 3, date: '2 days ago', content: 'Solved 3 LeetCode problems on Arrays and Hashing.', tags: ['DSA', 'Python'] },
-    ];
+    // Create Log Mutation
+    const createLogMutation = useMutation({
+        mutationFn: createLog,
+        onSuccess: () => {
+            queryClient.invalidateQueries({ queryKey: ['user-logs', user?.id] });
+            setLogContent('');
+            toast.success('Log saved successfully!');
+        },
+        onError: (error) => {
+            toast.error(`Failed to save log: ${error.message}`);
+        }
+    });
+
+    const handleSaveLog = () => {
+        if (!logContent.trim()) {
+            toast.error("Log content cannot be empty");
+            return;
+        }
+        if (!user) return;
+
+        createLogMutation.mutate({
+            user_id: user.id,
+            title: "Daily Log", // Or extract from content
+            description: logContent,
+            date: date?.toISOString(),
+            hours: 1 // Default or add input
+        });
+    };
 
     return (
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8 p-6 pb-20">
@@ -34,7 +65,7 @@ const LearningLog = () => {
                     </div>
                     <div className="flex items-center gap-2 bg-orange-500/10 border border-orange-500/20 px-4 py-2 rounded-full">
                         <Flame className="text-orange-500 fill-orange-500 animate-pulse" />
-                        <span className="text-xl font-bold text-orange-500">12 Day Streak</span>
+                        <span className="text-xl font-bold text-orange-500">{logs?.length || 0} Day Streak</span>
                     </div>
                 </div>
 
@@ -61,8 +92,9 @@ const LearningLog = () => {
                                 <Plus size={16} className="mr-1" /> Add Code Snippet
                             </Button>
                         </div>
-                        <NeonButton className="px-6">
-                            <Save size={18} className="mr-2" /> Save Log
+                        <NeonButton className="px-6" onClick={handleSaveLog} disabled={createLogMutation.isPending}>
+                            {createLogMutation.isPending ? <Loader2 className="mr-2 h-4 w-4 animate-spin" /> : <Save size={18} className="mr-2" />}
+                            Save Log
                         </NeonButton>
                     </div>
                 </GlassCard>
@@ -71,33 +103,38 @@ const LearningLog = () => {
                 <div className="space-y-4">
                     <h3 className="text-xl font-bold text-white">Recent Activity</h3>
                     <div className="relative border-l-2 border-white/10 ml-3 space-y-8 pl-8 py-2">
-                        {recentLogs.map((log, i) => (
-                            <motion.div
-                                key={log.id}
-                                initial={{ opacity: 0, x: -20 }}
-                                animate={{ opacity: 1, x: 0 }}
-                                transition={{ delay: i * 0.1 }}
-                                className="relative"
-                            >
-                                <div className="absolute -left-[41px] top-0 h-5 w-5 rounded-full bg-black border-2 border-purple-500 z-10"></div>
-                                <GlassCard className="p-4 hover:bg-white/5 transition-colors">
-                                    <div className="flex justify-between items-start mb-2">
-                                        <span className="text-sm font-bold text-purple-400">{log.date}</span>
-                                        <div className="flex gap-2">
-                                            <button className="text-gray-500 hover:text-white"><Share2 size={14} /></button>
+                        {isLoading ? (
+                            <Loader2 className="animate-spin text-purple-500" />
+                        ) : logs?.length === 0 ? (
+                            <p className="text-gray-500">No logs yet. Start writing!</p>
+                        ) : (
+                            logs?.map((log: any, i: number) => (
+                                <motion.div
+                                    key={log.id}
+                                    initial={{ opacity: 0, x: -20 }}
+                                    animate={{ opacity: 1, x: 0 }}
+                                    transition={{ delay: i * 0.1 }}
+                                    className="relative"
+                                >
+                                    <div className="absolute -left-[41px] top-0 h-5 w-5 rounded-full bg-black border-2 border-purple-500 z-10"></div>
+                                    <GlassCard className="p-4 hover:bg-white/5 transition-colors">
+                                        <div className="flex justify-between items-start mb-2">
+                                            <span className="text-sm font-bold text-purple-400">{new Date(log.date).toLocaleDateString()}</span>
+                                            <div className="flex gap-2">
+                                                <button className="text-gray-500 hover:text-white"><Share2 size={14} /></button>
+                                            </div>
                                         </div>
-                                    </div>
-                                    <p className="text-gray-300 mb-3">{log.content}</p>
-                                    <div className="flex gap-2">
-                                        {log.tags.map(tag => (
-                                            <span key={tag} className="text-xs px-2 py-1 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
-                                                {tag}
+                                        <p className="text-gray-300 mb-3">{log.description}</p>
+                                        <div className="flex gap-2">
+                                            {/* Tags could be added to schema later */}
+                                            <span className="text-xs px-2 py-1 rounded bg-purple-500/10 text-purple-300 border border-purple-500/20">
+                                                Log
                                             </span>
-                                        ))}
-                                    </div>
-                                </GlassCard>
-                            </motion.div>
-                        ))}
+                                        </div>
+                                    </GlassCard>
+                                </motion.div>
+                            ))
+                        )}
                     </div>
                 </div>
             </div>
@@ -114,17 +151,6 @@ const LearningLog = () => {
                         onSelect={setDate}
                         className="rounded-md border border-white/10 bg-black/20 pointer-events-none"
                     />
-                    <div className="mt-4 flex items-center justify-center gap-1 text-xs text-gray-500">
-                        <span>Less</span>
-                        <div className="flex gap-1">
-                            <div className="h-3 w-3 rounded-sm bg-gray-800"></div>
-                            <div className="h-3 w-3 rounded-sm bg-purple-900"></div>
-                            <div className="h-3 w-3 rounded-sm bg-purple-700"></div>
-                            <div className="h-3 w-3 rounded-sm bg-purple-500"></div>
-                            <div className="h-3 w-3 rounded-sm bg-purple-300"></div>
-                        </div>
-                        <span>More</span>
-                    </div>
                 </GlassCard>
 
                 <GlassCard className="p-6 space-y-4">
