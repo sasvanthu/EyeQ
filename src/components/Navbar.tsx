@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import { Link } from "react-scroll";
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { cn } from "@/lib/utils";
 import { motion, AnimatePresence } from "framer-motion";
 
@@ -11,6 +11,7 @@ interface NavbarProps {
 const Navbar = ({ className }: NavbarProps) => {
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const location = useLocation();
 
   useEffect(() => {
     const handleScroll = () => {
@@ -35,19 +36,35 @@ const Navbar = ({ className }: NavbarProps) => {
     >
       <div className="max-w-6xl mx-auto flex items-center justify-center">
         <div className="nav-button-container flex items-center gap-2 px-6 py-3 rounded-full border-2 border-white/20 bg-transparent backdrop-blur-md shadow-lg transition-all duration-300 hover:border-white/40 hover:shadow-xl">
-          <Link to="home" smooth={true} duration={500}>
-            <button className="nav-animated-button group">
-              <div className="nav-outline"></div>
-              <div className="nav-button-content">
-                <p className="nav-text">
-                  <span style={{ '--i': 0 } as React.CSSProperties}>H</span>
-                  <span style={{ '--i': 1 } as React.CSSProperties}>o</span>
-                  <span style={{ '--i': 2 } as React.CSSProperties}>m</span>
-                  <span style={{ '--i': 3 } as React.CSSProperties}>e</span>
-                </p>
-              </div>
-            </button>
-          </Link>
+          {location.pathname === '/' ? (
+            <Link to="home" smooth={true} duration={500}>
+              <button className="nav-animated-button group">
+                <div className="nav-outline"></div>
+                <div className="nav-button-content">
+                  <p className="nav-text">
+                    <span style={{ '--i': 0 } as React.CSSProperties}>H</span>
+                    <span style={{ '--i': 1 } as React.CSSProperties}>o</span>
+                    <span style={{ '--i': 2 } as React.CSSProperties}>m</span>
+                    <span style={{ '--i': 3 } as React.CSSProperties}>e</span>
+                  </p>
+                </div>
+              </button>
+            </Link>
+          ) : (
+            <RouterLink to="/">
+              <button className="nav-animated-button group">
+                <div className="nav-outline"></div>
+                <div className="nav-button-content">
+                  <p className="nav-text">
+                    <span style={{ '--i': 0 } as React.CSSProperties}>H</span>
+                    <span style={{ '--i': 1 } as React.CSSProperties}>o</span>
+                    <span style={{ '--i': 2 } as React.CSSProperties}>m</span>
+                    <span style={{ '--i': 3 } as React.CSSProperties}>e</span>
+                  </p>
+                </div>
+              </button>
+            </RouterLink>
+          )}
 
           <div className="w-px h-8 bg-white/20"></div>
 
@@ -86,20 +103,37 @@ const Navbar = ({ className }: NavbarProps) => {
 
           <div className="w-px h-8 bg-white/20"></div>
 
-          <Link to="about" smooth={true} duration={500}>
-            <button className="nav-animated-button group">
-              <div className="nav-outline"></div>
-              <div className="nav-button-content">
-                <p className="nav-text">
-                  <span style={{ '--i': 0 } as React.CSSProperties}>A</span>
-                  <span style={{ '--i': 1 } as React.CSSProperties}>b</span>
-                  <span style={{ '--i': 2 } as React.CSSProperties}>o</span>
-                  <span style={{ '--i': 3 } as React.CSSProperties}>u</span>
-                  <span style={{ '--i': 4 } as React.CSSProperties}>t</span>
-                </p>
-              </div>
-            </button>
-          </Link>
+          {location.pathname === '/' ? (
+            <Link to="about" smooth={true} duration={500}>
+              <button className="nav-animated-button group">
+                <div className="nav-outline"></div>
+                <div className="nav-button-content">
+                  <p className="nav-text">
+                    <span style={{ '--i': 0 } as React.CSSProperties}>A</span>
+                    <span style={{ '--i': 1 } as React.CSSProperties}>b</span>
+                    <span style={{ '--i': 2 } as React.CSSProperties}>o</span>
+                    <span style={{ '--i': 3 } as React.CSSProperties}>u</span>
+                    <span style={{ '--i': 4 } as React.CSSProperties}>t</span>
+                  </p>
+                </div>
+              </button>
+            </Link>
+          ) : (
+            <RouterLink to="/" state={{ scrollTo: 'about' }}>
+              <button className="nav-animated-button group">
+                <div className="nav-outline"></div>
+                <div className="nav-button-content">
+                  <p className="nav-text">
+                    <span style={{ '--i': 0 } as React.CSSProperties}>A</span>
+                    <span style={{ '--i': 1 } as React.CSSProperties}>b</span>
+                    <span style={{ '--i': 2 } as React.CSSProperties}>o</span>
+                    <span style={{ '--i': 3 } as React.CSSProperties}>u</span>
+                    <span style={{ '--i': 4 } as React.CSSProperties}>t</span>
+                  </p>
+                </div>
+              </button>
+            </RouterLink>
+          )}
         </div>
 
         <div className="md:hidden">
@@ -158,15 +192,27 @@ const Navbar = ({ className }: NavbarProps) => {
               </svg>
             </motion.button>
 
-            <Link to="home" smooth={true} duration={500} onClick={handleNavClick}>
-              <motion.button
-                className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Home
-              </motion.button>
-            </Link>
+            {location.pathname === '/' ? (
+              <Link to="home" smooth={true} duration={500} onClick={handleNavClick}>
+                <motion.button
+                  className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Home
+                </motion.button>
+              </Link>
+            ) : (
+              <RouterLink to="/" onClick={handleNavClick}>
+                <motion.button
+                  className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Home
+                </motion.button>
+              </RouterLink>
+            )}
 
             <RouterLink to="/portal" onClick={handleNavClick}>
               <motion.button
@@ -188,25 +234,49 @@ const Navbar = ({ className }: NavbarProps) => {
               </motion.button>
             </RouterLink>
 
-            <Link to="about" smooth={true} duration={500} onClick={handleNavClick}>
-              <motion.button
-                className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                About
-              </motion.button>
-            </Link>
+            {location.pathname === '/' ? (
+              <Link to="about" smooth={true} duration={500} onClick={handleNavClick}>
+                <motion.button
+                  className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  About
+                </motion.button>
+              </Link>
+            ) : (
+              <RouterLink to="/" state={{ scrollTo: 'about' }} onClick={handleNavClick}>
+                <motion.button
+                  className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  About
+                </motion.button>
+              </RouterLink>
+            )}
 
-            <Link to="contact" smooth={true} duration={500} onClick={handleNavClick}>
-              <motion.button
-                className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
-                whileHover={{ scale: 1.1 }}
-                whileTap={{ scale: 0.95 }}
-              >
-                Contact Us
-              </motion.button>
-            </Link>
+            {location.pathname === '/' ? (
+              <Link to="contact" smooth={true} duration={500} onClick={handleNavClick}>
+                <motion.button
+                  className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Contact Us
+                </motion.button>
+              </Link>
+            ) : (
+              <RouterLink to="/" state={{ scrollTo: 'contact' }} onClick={handleNavClick}>
+                <motion.button
+                  className="text-2xl font-bold text-foreground hover:text-primary transition-colors"
+                  whileHover={{ scale: 1.1 }}
+                  whileTap={{ scale: 0.95 }}
+                >
+                  Contact Us
+                </motion.button>
+              </RouterLink>
+            )}
           </motion.div>
         )}
       </AnimatePresence>

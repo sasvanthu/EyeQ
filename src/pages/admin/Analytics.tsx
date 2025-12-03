@@ -4,7 +4,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { ResponsiveContainer, BarChart, Bar, XAxis, Tooltip, CartesianGrid, LineChart, Line, Legend } from 'recharts';
 import { useQuery } from '@tanstack/react-query';
-import { fetchEvents, fetchMembers, fetchAllAttendance } from '@/lib/supabase';
+import { fetchEvents, fetchMembers, fetchAllAttendance } from '@/lib/api';
 import { Download, FileText, Users, Calendar, CheckSquare, Clock } from 'lucide-react';
 
 const Analytics: React.FC = () => {
@@ -57,7 +57,7 @@ const Analytics: React.FC = () => {
     const rows = [['Event', 'Member Name', 'Member Email', 'Attended At']];
     attendanceLogs.forEach((l) => {
       const ev = events.find((e) => e.id === l.eventId);
-      const mem = members.find((m) => m.id === l.memberId); // Note: memberId might be UUID now, check supabase response structure
+      const mem = members.find((m) => m.id === l.memberId); // Note: memberId is UUID
       // In fetchAllAttendance, we select members(*), so l.members should be populated if relation exists
       const memberName = l.members?.full_name || 'Unknown';
       const memberEmail = l.members?.email || 'Unknown';

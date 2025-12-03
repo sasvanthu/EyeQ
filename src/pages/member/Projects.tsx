@@ -7,7 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Badge } from '@/components/ui/badge';
 import { Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
-import { fetchProjects } from '@/lib/supabase';
+import { fetchProjects } from '@/lib/api';
 
 const Projects = () => {
     const [filter, setFilter] = useState('All');

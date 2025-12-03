@@ -1,5 +1,5 @@
 import React from 'react';
-import { Outlet, Link } from 'react-router-dom';
+import { Outlet, Link, useNavigate } from 'react-router-dom';
 import {
     Sidebar,
     SidebarProvider,
@@ -20,7 +20,11 @@ import GlassCard from './GlassCard';
 import NeonButton from './NeonButton';
 import { NeonLogo } from '@/components/eyeq';
 
+import { useAuth } from '@/lib/auth';
+
 const MemberLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) => {
+    const { user, profile, signOut } = useAuth();
+    const navigate = useNavigate();
     return (
         <SidebarProvider>
             <div className="min-h-screen flex flex-col md:flex-row bg-background text-foreground">
@@ -71,17 +75,19 @@ const MemberLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
                             <GlassCard className="flex items-center justify-between gap-3">
                                 <div className="flex items-center gap-3">
                                     <Avatar>
-                                        <AvatarImage src="/avatars/alex.jpg" alt="User Avatar" />
-                                        <AvatarFallback>AC</AvatarFallback>
+                                        <AvatarImage src={(profile as any)?.avatar_url} alt="User Avatar" />
+                                        <AvatarFallback>{(profile as any)?.full_name?.charAt(0) || user?.email?.charAt(0).toUpperCase()}</AvatarFallback>
                                     </Avatar>
                                     <div className="flex flex-col">
-                                        <span className="text-sm font-semibold">Alex Chen</span>
-                                        <span className="text-xs text-muted-foreground">Member</span>
+                                        <span className="text-sm font-semibold">{(profile as any)?.full_name || user?.email?.split('@')[0]}</span>
+                                        <span className="text-xs text-muted-foreground">{(profile as any)?.role || 'Member'}</span>
                                     </div>
                                 </div>
                                 <div className="flex items-center gap-2">
-                                    <NeonButton variant="ghost">Settings</NeonButton>
-                                    <NeonButton variant="ghost">Logout</NeonButton>
+                                    <NeonButton variant="ghost" onClick={async () => {
+                                        await signOut();
+                                        navigate('/');
+                                    }}>Logout</NeonButton>
                                 </div>
                             </GlassCard>
                         </div>
@@ -93,7 +99,7 @@ const MemberLayout: React.FC<{ children?: React.ReactNode }> = ({ children }) =>
                         <div className="flex items-center gap-3">
                             <SidebarTrigger />
                             <h2 className="text-xl font-bold">Member Dashboard</h2>
-                            <div className="text-xs text-muted-foreground">Welcome back, Alex!</div>
+                            <div className="text-xs text-muted-foreground">Welcome back, {(profile as any)?.full_name?.split(' ')[0] || user?.email?.split('@')[0]}!</div>
                         </div>
                         <div className="flex items-center gap-3">
                             <button className="p-2 rounded-md neon-outline neon-glow"><Bell /></button>

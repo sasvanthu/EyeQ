@@ -3,7 +3,7 @@ import AdminLayout from '@/components/eyeq/AdminLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import QRScanner from '@/components/QRScanner';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchEvents, createEvent as supaCreateEvent, updateEvent as supaUpdateEvent, deleteEvent as supaDeleteEvent, fetchAttendance, markAttendance } from '@/lib/supabase';
+import { fetchEvents, createEvent, updateEvent, deleteEvent, fetchAttendance, markAttendance } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogTrigger } from '@/components/ui/dialog';
 import { Input } from '@/components/ui/input';
@@ -11,7 +11,7 @@ import { Calendar } from '@/components/ui/calendar';
 import { useToast } from '@/components/ui/use-toast';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
-import { Plus, Calendar as CalendarIcon, MapPin, Users, QrCode, Trash2, Edit2, CheckCircle } from 'lucide-react';
+import { Plus, Calendar as CalendarIcon, MapPin, Users, QrCode, Trash2, Edit2, CheckCircle, X } from 'lucide-react';
 
 const Events: React.FC = () => {
   const queryClient = useQueryClient();
@@ -31,7 +31,7 @@ const Events: React.FC = () => {
   });
 
   const [editing, setEditing] = useState<any | null>(null);
-  const [attendanceOpen, setAttendanceOpen] = useState<number | null>(null);
+  const [attendanceOpen, setAttendanceOpen] = useState<string | null>(null);
   const [attendanceLogs, setAttendanceLogs] = useState<any[]>([]);
 
   // Fetch attendance logs when opening modal
@@ -47,7 +47,7 @@ const Events: React.FC = () => {
   });
 
   const createMutation = useMutation({
-    mutationFn: (data: any) => supaCreateEvent(data),
+    mutationFn: (data: any) => createEvent(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       setOpen(false);
@@ -58,7 +58,7 @@ const Events: React.FC = () => {
   });
 
   const updateMutation = useMutation({
-    mutationFn: (payload: any) => supaUpdateEvent(payload.id, payload),
+    mutationFn: (payload: any) => updateEvent(payload.id, payload),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       setOpen(false);
@@ -70,7 +70,7 @@ const Events: React.FC = () => {
   });
 
   const deleteMutation = useMutation({
-    mutationFn: (id: number) => supaDeleteEvent(id),
+    mutationFn: (id: string) => deleteEvent(id),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['events'] });
       toast({ title: "Event Deleted", description: "The event has been removed." });
@@ -117,10 +117,10 @@ const Events: React.FC = () => {
     setOpen(true);
   };
 
-  const [viewLogsEvent, setViewLogsEvent] = useState<number | null>(null);
+  const [viewLogsEvent, setViewLogsEvent] = useState<string | null>(null);
   const [qrScannerOpen, setQrScannerOpen] = useState(false);
 
-  const toggleAttendance = async (eventId: number, memberId: string) => { // memberId is string (UUID)
+  const toggleAttendance = async (eventId: string, memberId: string) => { // memberId is string (UUID)
     // Check if already attended? (Ideally handled by DB constraint or check)
     // For now just insert
     try {

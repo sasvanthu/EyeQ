@@ -7,7 +7,7 @@ import { ScrollArea } from '@/components/ui/scroll-area';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useAuth } from '@/lib/auth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchMessages, sendMessage, subscribeToMessages } from '@/lib/supabase';
+import { fetchMessages, sendMessage, subscribeToMessages } from '@/lib/api';
 import { Send, Hash, Volume2, MessageSquare, Sparkles } from 'lucide-react';
 import { GoogleGenerativeAI } from '@google/generative-ai';
 import { toast } from 'sonner';
@@ -29,25 +29,25 @@ const Chat: React.FC = () => {
     const [geminiMessages, setGeminiMessages] = useState<any[]>([]);
     const [isGeminiTyping, setIsGeminiTyping] = useState(false);
 
-    const { data: supabaseMessages = [], isLoading } = useQuery({
+    const { data: messagesData = [], isLoading } = useQuery({
         queryKey: ['messages', activeChannel],
         queryFn: () => fetchMessages(activeChannel),
         enabled: activeChannel !== 'gemini',
     });
 
-    const messages = activeChannel === 'gemini' ? geminiMessages : supabaseMessages;
+    const messages = activeChannel === 'gemini' ? geminiMessages : messagesData;
 
     useEffect(() => {
         if (activeChannel === 'gemini') return;
 
         // Subscribe to real-time changes
-        const subscription = subscribeToMessages(activeChannel, (payload) => {
+        const unsubscribe = subscribeToMessages(activeChannel, (payload) => {
             // Optimistically update or invalidate query
             queryClient.invalidateQueries({ queryKey: ['messages', activeChannel] });
         });
 
         return () => {
-            subscription.unsubscribe();
+            unsubscribe();
         };
     }, [activeChannel, queryClient]);
 
@@ -66,11 +66,11 @@ const Chat: React.FC = () => {
                 const userMsg = {
                     id: Date.now().toString(),
                     content: newMessage,
-                    sender_id: user.id,
+                    sender_id: user.uid,
                     created_at: new Date().toISOString(),
                     members: {
-                        full_name: user.user_metadata?.full_name || 'You',
-                        avatar_url: user.user_metadata?.avatar_url,
+                        full_name: user.displayName || 'You',
+                        avatar_url: user.photoURL,
                     }
                 };
                 setGeminiMessages(prev => [...prev, userMsg]);
@@ -119,7 +119,7 @@ const Chat: React.FC = () => {
                     setIsGeminiTyping(false);
                 }
             } else {
-                await sendMessage(newMessage, activeChannel, user.id);
+                await sendMessage(newMessage, activeChannel, user.uid);
             }
         },
         onSuccess: () => {
@@ -204,7 +204,7 @@ const Chat: React.FC = () => {
                                     </div>
                                 ) : (
                                     messages.map((msg: any) => {
-                                        const isMe = msg.sender_id === user?.id;
+                                        const isMe = msg.sender_id === user?.uid;
                                         return (
                                             <div
                                                 key={msg.id}

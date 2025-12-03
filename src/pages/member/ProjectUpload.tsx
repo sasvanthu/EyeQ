@@ -9,7 +9,7 @@ import { Label } from '@/components/ui/label';
 import { Badge } from '@/components/ui/badge';
 import { useAuth } from '@/lib/auth';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
-import { createProject } from '@/lib/supabase';
+import { createProject } from '@/lib/api';
 import { toast } from 'sonner';
 import { useNavigate } from 'react-router-dom';
 
@@ -61,7 +61,7 @@ const ProjectUpload = () => {
         if (!user) return;
 
         createProjectMutation.mutate({
-            user_id: user.id,
+            user_id: user.uid,
             title,
             description,
             tags, // Ensure DB supports array or JSONB for tags

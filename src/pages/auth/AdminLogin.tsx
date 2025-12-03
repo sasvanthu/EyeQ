@@ -3,7 +3,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import GlassCard from '@/components/eyeq/GlassCard';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { auth } from '@/lib/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { fetchMember } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 import { ShieldCheck } from 'lucide-react';
 
@@ -22,28 +24,15 @@ const AdminLogin = () => {
             // Allow login with username (append @eyeq.com if no domain)
             const loginEmail = email.includes('@') ? email : `${email}@eyeq.com`;
 
-            const { data, error } = await supabase.auth.signInWithPassword({
-                email: loginEmail,
-                password,
-            });
-
-            if (error) throw error;
+            const userCredential = await signInWithEmailAndPassword(auth, loginEmail, password);
+            const user = userCredential.user;
 
             // Check if user is actually an admin
-            if (data.user) {
-                const { data: profile, error: profileError } = await supabase
-                    .from('profiles')
-                    .select('role')
-                    .eq('id', data.user.id)
-                    .single();
+            if (user) {
+                const profile = await fetchMember(user.uid);
 
-                if (profileError) {
-                    console.error("Profile fetch error:", profileError);
-                    // Fallback or error handling if profile doesn't exist yet
-                }
-
-                if (profile?.role !== 'admin') {
-                    await supabase.auth.signOut();
+                if ((profile as any)?.role !== 'admin') {
+                    await auth.signOut();
                     throw new Error('Unauthorized access. Admin privileges required.');
                 }
 

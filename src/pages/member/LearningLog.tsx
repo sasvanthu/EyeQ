@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button';
 import { Calendar } from '@/components/ui/calendar';
 import { useAuth } from '@/lib/auth';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchUserLogs, createLog } from '@/lib/supabase';
+import { fetchUserLogs, createLog } from '@/lib/api';
 import { toast } from 'sonner';
 import { formatDistanceToNow } from 'date-fns';
 
@@ -20,16 +20,16 @@ const LearningLog = () => {
 
     // Fetch Logs
     const { data: logs, isLoading } = useQuery({
-        queryKey: ['user-logs', user?.id],
-        queryFn: () => fetchUserLogs(user?.id!),
-        enabled: !!user?.id,
+        queryKey: ['user-logs', user?.uid],
+        queryFn: () => fetchUserLogs(user?.uid!),
+        enabled: !!user?.uid,
     });
 
     // Create Log Mutation
     const createLogMutation = useMutation({
         mutationFn: createLog,
         onSuccess: () => {
-            queryClient.invalidateQueries({ queryKey: ['user-logs', user?.id] });
+            queryClient.invalidateQueries({ queryKey: ['user-logs', user?.uid] });
             setLogContent('');
             toast.success('Log saved successfully!');
         },

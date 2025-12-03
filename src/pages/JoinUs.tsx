@@ -3,7 +3,8 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
 import GlassCard from '@/components/eyeq/GlassCard';
-import { supabase } from '@/lib/supabase';
+import { db } from '@/lib/firebase';
+import { collection, addDoc } from 'firebase/firestore';
 import { useToast } from '@/components/ui/use-toast';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '@/components/Navbar';
@@ -34,21 +35,16 @@ const JoinUs = () => {
             // Split skills by comma and trim
             const skillsArray = formData.skills.split(',').map(s => s.trim()).filter(s => s);
 
-            const { error } = await supabase
-                .from('requests')
-                .insert([
-                    {
-                        full_name: formData.full_name,
-                        email: formData.email,
-                        phone: formData.phone,
-                        department: formData.department,
-                        skills: skillsArray,
-                        reason: formData.reason,
-                        status: 'pending'
-                    }
-                ]);
-
-            if (error) throw error;
+            await addDoc(collection(db, 'requests'), {
+                full_name: formData.full_name,
+                email: formData.email,
+                phone: formData.phone,
+                department: formData.department,
+                skills: skillsArray,
+                reason: formData.reason,
+                status: 'pending',
+                created_at: new Date().toISOString()
+            });
 
             toast({
                 title: "Request Submitted!",

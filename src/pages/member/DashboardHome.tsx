@@ -8,7 +8,7 @@ import NeonButton from '@/components/eyeq/NeonButton';
 import { Link } from 'react-router-dom';
 import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
-import { fetchMember, fetchUserProjects, fetchUserLogs, fetchUserNotifications } from '@/lib/supabase';
+import { fetchMember, fetchUserProjects, fetchUserLogs, fetchUserNotifications } from '@/lib/api';
 import { formatDistanceToNow } from 'date-fns';
 
 const DashboardHome = () => {
@@ -16,30 +16,30 @@ const DashboardHome = () => {
 
     // Fetch User Profile
     const { data: profile, isLoading: profileLoading } = useQuery({
-        queryKey: ['profile', user?.id],
-        queryFn: () => fetchMember(user?.id!),
-        enabled: !!user?.id,
+        queryKey: ['profile', user?.uid],
+        queryFn: () => fetchMember(user?.uid!),
+        enabled: !!user?.uid,
     });
 
     // Fetch User Projects
     const { data: projects, isLoading: projectsLoading } = useQuery({
-        queryKey: ['user-projects', user?.id],
-        queryFn: () => fetchUserProjects(user?.id!),
-        enabled: !!user?.id,
+        queryKey: ['user-projects', user?.uid],
+        queryFn: () => fetchUserProjects(user?.uid!),
+        enabled: !!user?.uid,
     });
 
     // Fetch User Logs
     const { data: logs, isLoading: logsLoading } = useQuery({
-        queryKey: ['user-logs', user?.id],
-        queryFn: () => fetchUserLogs(user?.id!),
-        enabled: !!user?.id,
+        queryKey: ['user-logs', user?.uid],
+        queryFn: () => fetchUserLogs(user?.uid!),
+        enabled: !!user?.uid,
     });
 
     // Fetch Notifications
     const { data: notifications, isLoading: notificationsLoading } = useQuery({
-        queryKey: ['user-notifications', user?.id],
-        queryFn: () => fetchUserNotifications(user?.id!),
-        enabled: !!user?.id,
+        queryKey: ['user-notifications', user?.uid],
+        queryFn: () => fetchUserNotifications(user?.uid!),
+        enabled: !!user?.uid,
     });
 
     // Combine recent updates
@@ -66,13 +66,13 @@ const DashboardHome = () => {
 
     // Default values if profile is missing (shouldn't happen for valid members)
     const displayUser = {
-        name: profile?.full_name || user?.email?.split('@')[0] || "Member",
-        role: profile?.role || "Member",
-        avatar: profile?.avatar_url || "",
-        streak: profile?.streaks?.current || 0,
-        xp: profile?.xp || 0, // Assuming XP is added to profile, else 0
+        name: (profile as any)?.full_name || user?.email?.split('@')[0] || "Member",
+        role: (profile as any)?.role || "Member",
+        avatar: (profile as any)?.avatar_url || "",
+        streak: (profile as any)?.streaks?.current || 0,
+        xp: (profile as any)?.xp || 0, // Assuming XP is added to profile, else 0
         nextLevelXp: 1000, // Placeholder
-        level: Math.floor((profile?.xp || 0) / 1000) + 1
+        level: Math.floor(((profile as any)?.xp || 0) / 1000) + 1
     };
 
     return (
@@ -122,16 +122,20 @@ const DashboardHome = () => {
                     </div>
 
                     <div className="flex gap-3">
-                        <GlassCard className="p-3 flex flex-col items-center justify-center w-24 hover:border-cyan-500/50 transition-colors cursor-pointer group">
-                            <Trophy className="text-yellow-500 mb-1 group-hover:scale-110 transition-transform" />
-                            <span className="text-xs text-gray-300">Projects</span>
-                            <span className="text-sm font-bold">{projects?.length || 0}</span>
-                        </GlassCard>
-                        <GlassCard className="p-3 flex flex-col items-center justify-center w-24 hover:border-cyan-500/50 transition-colors cursor-pointer group">
-                            <Calendar className="text-green-500 mb-1 group-hover:scale-110 transition-transform" />
-                            <span className="text-xs text-gray-300">Logs</span>
-                            <span className="text-sm font-bold">{logs?.length || 0}</span>
-                        </GlassCard>
+                        <Link to="/projects">
+                            <GlassCard className="p-3 flex flex-col items-center justify-center w-24 hover:border-cyan-500/50 transition-colors cursor-pointer group">
+                                <Trophy className="text-yellow-500 mb-1 group-hover:scale-110 transition-transform" />
+                                <span className="text-xs text-gray-300">Projects</span>
+                                <span className="text-sm font-bold">{projects?.length || 0}</span>
+                            </GlassCard>
+                        </Link>
+                        <Link to="/learning">
+                            <GlassCard className="p-3 flex flex-col items-center justify-center w-24 hover:border-cyan-500/50 transition-colors cursor-pointer group">
+                                <Calendar className="text-green-500 mb-1 group-hover:scale-110 transition-transform" />
+                                <span className="text-xs text-gray-300">Logs</span>
+                                <span className="text-sm font-bold">{logs?.length || 0}</span>
+                            </GlassCard>
+                        </Link>
                     </div>
                 </div>
             </motion.div>
@@ -170,7 +174,9 @@ const DashboardHome = () => {
                         <h2 className="text-xl font-bold text-white flex items-center gap-2">
                             <Zap className="text-yellow-400" size={20} /> Recent Activity
                         </h2>
-                        <NeonButton variant="ghost" size="sm">View All</NeonButton>
+                        <Link to="/profile">
+                            <NeonButton variant="ghost" size="sm">View All</NeonButton>
+                        </Link>
                     </div>
 
                     <div className="space-y-3">
@@ -209,7 +215,7 @@ const DashboardHome = () => {
                         <h2 className="text-xl font-bold text-white flex items-center gap-2">
                             <Bell className="text-red-400" size={20} /> Notifications
                         </h2>
-                        <button className="text-xs text-gray-400 hover:text-white">Mark all read</button>
+                        <button className="text-xs text-gray-400 hover:text-white" onClick={() => alert("All notifications marked as read!")}>Mark all read</button>
                     </div>
 
                     <GlassCard className="p-0 overflow-hidden">

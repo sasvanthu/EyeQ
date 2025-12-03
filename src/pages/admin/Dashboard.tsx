@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Bell, Calendar, CheckCircle, Users } from "lucide-react";
 import { useQuery } from '@tanstack/react-query';
-import { fetchMembers, fetchEvents, fetchAllAttendance, fetchRequests } from '@/lib/supabase';
+import { fetchMembers, fetchEvents, fetchAllAttendance, fetchRequests } from '@/lib/api';
 import { LineChart, Line, XAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 const AdminDashboard = () => {

@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import { Link as ScrollLink, Element } from "react-scroll";
-import { Link as RouterLink } from 'react-router-dom';
+import { Link as ScrollLink, Element, scroller } from "react-scroll";
+import { Link as RouterLink, useLocation } from 'react-router-dom';
 import { CalendarIcon, FileTextIcon } from "@radix-ui/react-icons";
 import { BellIcon, Share2Icon, Instagram, Linkedin, Phone } from "lucide-react";
 import RotatingText from "@/components/RotatingText";
@@ -34,6 +34,20 @@ const Index = () => {
   const [modalContent, setModalContent] = useState({ title: "", description: "" });
   const [showLoader, setShowLoader] = useState(true);
   const [showContent, setShowContent] = useState(false);
+  const location = useLocation();
+
+  useEffect(() => {
+    if (location.state && (location.state as any).scrollTo) {
+      const target = (location.state as any).scrollTo;
+      setTimeout(() => {
+        scroller.scrollTo(target, {
+          duration: 500,
+          delay: 100,
+          smooth: true,
+        });
+      }, 500);
+    }
+  }, [location]);
 
   useEffect(() => {
     const timer = setTimeout(() => {

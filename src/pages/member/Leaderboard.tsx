@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import MemberLayout from '@/components/eyeq/MemberLayout';
 import { useQuery } from '@tanstack/react-query';
-import { fetchLeaderboard } from '@/lib/supabase';
+import { fetchLeaderboard } from '@/lib/api';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';

@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { fetchAlbums, fetchGalleryImages } from '@/lib/supabase';
+import { fetchAlbums, fetchGalleryImages } from '@/lib/api';
 import { motion, AnimatePresence } from 'framer-motion';
 import { LoaderOne } from '@/components/ui/loader';
 import Navbar from '@/components/Navbar';
@@ -55,8 +55,8 @@ const Gallery = () => {
                     <button
                         onClick={() => setSelectedAlbum(null)}
                         className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedAlbum === null
-                                ? 'bg-primary text-primary-foreground'
-                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                            ? 'bg-primary text-primary-foreground'
+                            : 'bg-muted text-muted-foreground hover:bg-muted/80'
                             }`}
                     >
                         All Photos
@@ -66,8 +66,8 @@ const Gallery = () => {
                             key={album.id}
                             onClick={() => setSelectedAlbum(album.id)}
                             className={`px-4 py-2 rounded-full text-sm font-medium transition-all ${selectedAlbum === album.id
-                                    ? 'bg-primary text-primary-foreground'
-                                    : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                                ? 'bg-primary text-primary-foreground'
+                                : 'bg-muted text-muted-foreground hover:bg-muted/80'
                                 }`}
                         >
                             {album.title}

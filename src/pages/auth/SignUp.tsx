@@ -3,69 +3,93 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import GlassCard from '@/components/eyeq/GlassCard';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { auth } from '@/lib/firebase';
+import { createUserWithEmailAndPassword } from 'firebase/auth';
+import { checkApprovedRequest, createMember } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
+import { Loader2 } from 'lucide-react';
 
-const SignUp: React.FC = () => {
-  const [name, setName] = useState('');
+const Signup = () => {
+  const [step, setStep] = useState<'check' | 'register'>('check');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [role, setRole] = useState('Member');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
+  const [requestData, setRequestData] = useState<any>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  const submit = async (e: React.FormEvent) => {
+  const handleCheck = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     try {
-      // 1. Sign up with Supabase Auth
-      const { data: authData, error: authError } = await supabase.auth.signUp({
-        email,
-        password,
-        options: {
-          data: {
-            full_name: name,
-            role: role,
-          },
-        },
+      const request = await checkApprovedRequest(email);
+      if (request) {
+        setRequestData(request);
+        setStep('register');
+        toast({
+          title: "Request Found!",
+          description: "Your request has been approved. Please set a password.",
+        });
+      } else {
+        toast({
+          title: "No Approved Request",
+          description: "We couldn't find an approved request for this email. Please check the email or contact support.",
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error(error);
+      toast({
+        title: "Error",
+        description: "Something went wrong. Please try again.",
+        variant: "destructive",
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleRegister = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (password !== confirmPassword) {
+      toast({
+        title: "Passwords do not match",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setLoading(true);
+    try {
+      // 1. Create Auth User
+      const userCredential = await createUserWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
+
+      // 2. Create Profile
+      await createMember({
+        id: user.uid,
+        email: email,
+        full_name: requestData.full_name,
+        phone: requestData.phone,
+        department: requestData.department,
+        skills: requestData.skills,
+        role: 'member', // Default role
+        created_at: new Date().toISOString(),
+        avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${requestData.full_name}` // Default avatar
       });
 
-      if (authError) throw authError;
-
-      if (authData.user) {
-        // 2. Create member record
-        const { error: memberError } = await supabase
-          .from('members')
-          .insert([
-            {
-              id: authData.user.id, // Link to auth user
-              email: email,
-              full_name: name,
-              role: role,
-              is_approved: false, // Default to pending
-            },
-          ]);
-
-        if (memberError) {
-          console.error('Error creating member record:', memberError);
-          // Optional: Delete auth user if member creation fails to maintain consistency
-          // await supabase.auth.admin.deleteUser(authData.user.id);
-          throw new Error('Failed to create member profile. Please try again.');
-        }
-
-        toast({
-          title: "Account Created",
-          description: "Please check your email to verify your account.",
-        });
-
-        navigate('/login');
-      }
-    } catch (error: any) {
       toast({
-        title: "Signup Failed",
-        description: error.message || "An error occurred during signup.",
+        title: "Account Created!",
+        description: "Welcome to EyeQ. You are now logged in.",
+      });
+      navigate('/dashboard');
+
+    } catch (error: any) {
+      console.error(error);
+      toast({
+        title: "Registration Failed",
+        description: error.message,
         variant: "destructive",
       });
     } finally {
@@ -74,30 +98,78 @@ const SignUp: React.FC = () => {
   };
 
   return (
-    <div className='min-h-screen flex items-center justify-center p-4'>
+    <div className='min-h-screen flex items-center justify-center p-4 relative overflow-hidden'>
+      {/* Background Elements */}
+      <div className="absolute inset-0 bg-black -z-10" />
+      <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] rounded-full bg-primary/10 blur-[100px] -z-10" />
+      <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] rounded-full bg-blue-500/10 blur-[100px] -z-10" />
+
       <GlassCard className='max-w-md w-full p-8'>
-        <h2 className='text-xl font-semibold mb-2'>Sign Up</h2>
-        <form onSubmit={submit} className='space-y-3'>
-          <Input placeholder='Full name' value={name} onChange={(e) => setName(e.target.value)} disabled={loading} />
-          <Input placeholder='Email' value={email} onChange={(e) => setEmail(e.target.value)} disabled={loading} />
-          <Input placeholder='Password' type='password' value={password} onChange={(e) => setPassword(e.target.value)} disabled={loading} />
-          <div className='flex items-center gap-2'>
-            <select className='bg-transparent border p-2 rounded-md w-full' value={role} onChange={(e) => setRole(e.target.value)} disabled={loading}>
-              <option>Member</option>
-              <option>PR</option>
-              <option>Events</option>
-              <option>Tech Lead</option>
-            </select>
-          </div>
-          <div className='flex justify-end'>
-            <Button type='submit' disabled={loading}>
-              {loading ? 'Signing up...' : 'Sign up'}
+        <h2 className='text-2xl font-bold mb-2 text-center'>Complete Registration</h2>
+        <p className="text-center text-muted-foreground mb-6 text-sm">
+          {step === 'check' ? "Enter your email to verify your approval status." : "Set a password to secure your account."}
+        </p>
+
+        {step === 'check' ? (
+          <form onSubmit={handleCheck} className='space-y-4'>
+            <div className="space-y-2">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Email Address</label>
+              <Input
+                placeholder='john@example.com'
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                disabled={loading}
+                className="bg-background/50"
+              />
+            </div>
+            <Button type='submit' className="w-full" disabled={loading}>
+              {loading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
+              {loading ? 'Verifying...' : 'Verify Email'}
             </Button>
-          </div>
-        </form>
+          </form>
+        ) : (
+          <form onSubmit={handleRegister} className='space-y-4'>
+            <div className="space-y-2">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Email</label>
+              <Input value={email} disabled className="bg-muted/50" />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Password</label>
+              <Input
+                type='password'
+                placeholder='••••••••'
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                disabled={loading}
+                className="bg-background/50"
+              />
+            </div>
+            <div className="space-y-2">
+              <label className="text-xs font-medium uppercase tracking-wider text-muted-foreground">Confirm Password</label>
+              <Input
+                type='password'
+                placeholder='••••••••'
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                disabled={loading}
+                className="bg-background/50"
+              />
+            </div>
+            <Button type='submit' className="w-full" disabled={loading}>
+              {loading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
+              {loading ? 'Creating Account...' : 'Create Account'}
+            </Button>
+          </form>
+        )}
+
+        <div className="text-center mt-6">
+          <Button variant="link" className="text-xs text-muted-foreground" onClick={() => navigate('/login')}>
+            Already have an account? Login
+          </Button>
+        </div>
       </GlassCard>
     </div>
   );
 };
 
-export default SignUp;
+export default Signup;

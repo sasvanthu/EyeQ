@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import AdminLayout from '@/components/eyeq/AdminLayout';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchAlbums, createAlbum, deleteAlbum, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage } from '@/lib/supabase';
+import { fetchAlbums, createAlbum, deleteAlbum, fetchGalleryImages, uploadGalleryImage, deleteGalleryImage } from '@/lib/api';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -163,8 +163,8 @@ const AdminGallery = () => {
                                     <div
                                         key={album.id}
                                         className={`p-3 rounded-lg border cursor-pointer transition-colors flex justify-between items-center group ${selectedAlbum === album.id
-                                                ? 'bg-primary/10 border-primary'
-                                                : 'bg-card hover:bg-accent'
+                                            ? 'bg-primary/10 border-primary'
+                                            : 'bg-card hover:bg-accent'
                                             }`}
                                         onClick={() => setSelectedAlbum(album.id)}
                                     >
@@ -199,7 +199,7 @@ const AdminGallery = () => {
                         <CardHeader>
                             <CardTitle>
                                 {selectedAlbum
-                                    ? `Photos: ${albums?.find((a: any) => a.id === selectedAlbum)?.title}`
+                                    ? `Photos: ${(albums?.find((a: any) => a.id === selectedAlbum) as any)?.title}`
                                     : 'Select an album to manage photos'}
                             </CardTitle>
                         </CardHeader>

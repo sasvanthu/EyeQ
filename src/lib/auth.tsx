@@ -1,9 +1,13 @@
 import React, { createContext, useContext, useEffect, useState } from 'react';
-import { supabase } from './supabase';
-import { Session, User } from '@supabase/supabase-js';
+import { auth, db } from './firebase';
+import {
+  onAuthStateChanged,
+  signOut as firebaseSignOut,
+  User
+} from 'firebase/auth';
+import { doc, getDoc } from 'firebase/firestore';
 
 interface AuthContextType {
-  session: Session | null;
   user: User | null;
   profile: any | null;
   loading: boolean;
@@ -14,55 +18,57 @@ interface AuthContextType {
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const [session, setSession] = useState<Session | null>(null);
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<any | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    // Get initial session
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
+    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+      if (currentUser) {
+        setUser(currentUser);
+        await fetchProfile(currentUser.uid);
       } else {
+        // MOCK USER FOR TESTING NEW PROFILE STATE
+        const mockUser = {
+          uid: 'mock-new-user-' + Math.random().toString(36).substring(7),
+          email: 'newuser@eyeq.com',
+          displayName: 'New Member',
+          emailVerified: true,
+          isAnonymous: false,
+          metadata: {},
+          providerData: [],
+          refreshToken: '',
+          tenantId: null,
+          delete: async () => { },
+          getIdToken: async () => '',
+          getIdTokenResult: async () => ({} as any),
+          reload: async () => { },
+          toJSON: () => ({}),
+          phoneNumber: null,
+          photoURL: null,
+          providerId: 'firebase',
+        } as User;
+
+        setUser(mockUser);
+        setProfile(null); // Ensure no profile data exists
         setLoading(false);
       }
-    }).catch((err) => {
-      console.error("Error getting session:", err);
-      setLoading(false);
     });
 
-    // Listen for changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
-      setSession(session);
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        fetchProfile(session.user.id);
-      } else {
-        setProfile(null);
-        setLoading(false);
-      }
-    });
-
-    return () => subscription.unsubscribe();
+    return () => unsubscribe();
   }, []);
 
   const fetchProfile = async (userId: string) => {
     try {
-      const { data, error } = await supabase
-        .from('members')
-        .select('*')
-        .eq('id', userId) // Assuming member.id is the auth.user.id (UUID)
-        .single();
+      const docRef = doc(db, 'users', userId);
+      const docSnap = await getDoc(docRef);
 
-      if (error) {
-        console.error('Error fetching profile:', error);
-        // If no profile found, it might be a new user or schema mismatch.
-        // For now, we'll just set profile to null or a default.
+      if (docSnap.exists()) {
+        setProfile(docSnap.data());
+      } else {
+        console.log('No such profile!');
+        setProfile(null);
       }
-      setProfile(data);
     } catch (err) {
       console.error('Unexpected error fetching profile:', err);
     } finally {
@@ -71,14 +77,14 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
+    await firebaseSignOut(auth);
     setProfile(null);
   };
 
-  const isAdmin = profile?.role === 'Admin';
+  const isAdmin = profile?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ session, user, profile, loading, signOut, isAdmin }}>
+    <AuthContext.Provider value={{ user, profile, loading, signOut, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );
@@ -92,6 +98,5 @@ export const useAuth = () => {
   return context;
 };
 
-// Backwards compatibility for existing code (temporary)
 
 

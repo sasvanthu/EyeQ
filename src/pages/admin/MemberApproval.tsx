@@ -1,6 +1,6 @@
 import React from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchRequests, updateRequestStatus, createMember } from '@/lib/supabase';
+import { fetchRequests, updateRequestStatus, createMember } from '@/lib/api';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -18,20 +18,20 @@ const MemberApproval = () => {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status, requestData }: { id: number, status: 'approved' | 'rejected', requestData?: any }) => {
+    mutationFn: async ({ id, status, requestData }: { id: string, status: 'approved' | 'rejected', requestData?: any }) => {
       // 1. Update request status
       await updateRequestStatus(id, status);
 
       // 2. If approved, create a profile (Note: Auth user creation is separate)
       if (status === 'approved' && requestData) {
         // We can't create the Auth User here without Service Role, so we just create the profile
-        // The Admin must manually create the Auth User in Supabase Dashboard to match this email/id
+        // The Admin must manually create the Auth User in Firebase Console to match this email/id
         // OR we assume the Auth User will be created later and linked.
 
         // Actually, 'profiles' relies on 'id' being the Auth ID. 
         // Since we don't have the Auth ID yet, we CANNOT create the profile row correctly linked to auth.
         // So, we will just mark the request as approved. 
-        // The workflow should be: Admin sees approved request -> Admin goes to Supabase -> Creates User -> User ID is generated -> Admin creates Profile (or User fills it on first login).
+        // The workflow should be: Admin sees approved request -> Admin goes to Firebase -> Creates User -> User ID is generated -> Admin creates Profile (or User fills it on first login).
 
         // REVISED FLOW: 
         // 1. Admin clicks Approve.
@@ -57,7 +57,7 @@ const MemberApproval = () => {
     },
   });
 
-  const handleAction = (id: number, status: 'approved' | 'rejected', request: any) => {
+  const handleAction = (id: string, status: 'approved' | 'rejected', request: any) => {
     updateStatusMutation.mutate({ id, status, requestData: request });
   };
 

@@ -3,7 +3,9 @@ import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import GlassCard from '@/components/eyeq/GlassCard';
 import { useNavigate } from 'react-router-dom';
-import { supabase } from '@/lib/supabase';
+import { auth } from '@/lib/firebase';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { fetchMember } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
 
 const Login: React.FC = () => {
@@ -18,25 +20,13 @@ const Login: React.FC = () => {
     setLoading(true);
 
     try {
-      const { error } = await supabase.auth.signInWithPassword({
-        email,
-        password,
-      });
-
-      if (error) {
-        throw error;
-      }
-
-      const { data: { user } } = await supabase.auth.getUser();
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const user = userCredential.user;
 
       if (user) {
-        const { data: profile } = await supabase
-          .from('profiles')
-          .select('role')
-          .eq('id', user.id)
-          .single();
+        const profile = await fetchMember(user.uid);
 
-        if (profile?.role === 'admin') {
+        if ((profile as any)?.role === 'admin') {
           navigate('/admin/dashboard');
         } else {
           navigate('/dashboard');
@@ -68,8 +58,11 @@ const Login: React.FC = () => {
               Request to Join
             </Button>
           </div>
-          <div className="text-center mt-4">
-            <Button variant="link" className="text-xs text-neutral-400" onClick={() => navigate('/')}>Back to Home</Button>
+          <div className="text-center mt-4 space-y-2">
+            <Button variant="link" className="text-xs text-neutral-400" onClick={() => navigate('/signup')}>Have an invite? Complete Signup</Button>
+            <div className="block">
+              <Button variant="link" className="text-xs text-neutral-400" onClick={() => navigate('/')}>Back to Home</Button>
+            </div>
           </div>
         </form>
       </GlassCard>

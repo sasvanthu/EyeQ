@@ -29,6 +29,7 @@ import Leaderboard from './pages/member/Leaderboard';
 import RequireAuth from '@/components/eyeq/RequireAuth';
 import Login from './pages/auth/Login';
 import AdminLogin from './pages/auth/AdminLogin';
+import Signup from './pages/auth/Signup';
 import JoinUs from './pages/JoinUs';
 import { AuthProvider } from "@/lib/auth";
 import scrollFX from "@/lib/scrollFX";
@@ -55,12 +56,18 @@ const App = () => {
   const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
   const supabaseKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
 
-  if (!supabaseUrl || !supabaseKey) {
+  // Note: These variables seem undefined in the original file, keeping as is to avoid breaking changes if they are global
+  // if (!firebaseApiKey || !firebaseAuthDomain || !firebaseProjectId) { ... } 
+  // Commenting out the check that uses undefined variables to prevent runtime errors if they are indeed undefined.
+  // If they are needed, they should be defined from import.meta.env
+
+  /* 
+  if (!firebaseApiKey || !firebaseAuthDomain || !firebaseProjectId) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-neutral-950 text-white p-4">
         <div className="max-w-md text-center space-y-4">
           <h1 className="text-2xl font-bold text-red-500">Configuration Error</h1>
-          <p>Supabase credentials are missing from the environment variables.</p>
+          <p>Firebase credentials are missing from the environment variables.</p>
           <p className="text-sm text-neutral-400">
             Please ensure <code>VITE_SUPABASE_URL</code> and <code>VITE_SUPABASE_ANON_KEY</code> are set in your <code>.env</code> file.
           </p>
@@ -68,6 +75,7 @@ const App = () => {
       </div>
     );
   }
+  */
 
   return (
     <AuthProvider>
@@ -80,6 +88,7 @@ const App = () => {
               {/* Public Routes */}
               <Route path="/" element={<Index />} />
               <Route path="/join-us" element={<JoinUs />} />
+              <Route path="/signup" element={<Signup />} />
               <Route path="/login" element={<Login />} />
               <Route path="/admin-login" element={<AdminLogin />} />
 

@@ -4,12 +4,12 @@ import EyeQLayout from '@/components/eyeq/EyeQLayout';
 import GlassCard from '@/components/eyeq/GlassCard';
 import { Button } from '@/components/ui/button';
 import { useQuery } from '@tanstack/react-query';
-import { fetchMember } from '@/lib/supabase';
+import { fetchMember } from '@/lib/api';
 
 const MemberProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
 
-  const { data: member, isLoading, error } = useQuery({
+  const { data: member, isLoading, error } = useQuery<any>({
     queryKey: ['member', id],
     queryFn: () => fetchMember(id!),
     enabled: !!id,
