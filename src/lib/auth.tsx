@@ -5,13 +5,14 @@ import {
   signOut as firebaseSignOut,
   User
 } from 'firebase/auth';
-import { doc, getDoc } from 'firebase/firestore';
+import { doc, getDoc, setDoc, onSnapshot } from 'firebase/firestore';
 
 interface AuthContextType {
   user: User | null;
   profile: any | null;
   loading: boolean;
   signOut: () => Promise<void>;
+  refreshProfile: () => Promise<void>;
   isAdmin: boolean;
 }
 
@@ -23,56 +24,76 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const unsubscribe = onAuthStateChanged(auth, async (currentUser) => {
+    let unsubscribeProfile: (() => void) | null = null;
+
+    const unsubscribeAuth = onAuthStateChanged(auth, (currentUser) => {
       if (currentUser) {
         setUser(currentUser);
-        await fetchProfile(currentUser.uid);
-      } else {
-        // MOCK USER FOR TESTING NEW PROFILE STATE
-        const mockUser = {
-          uid: 'mock-new-user-' + Math.random().toString(36).substring(7),
-          email: 'newuser@eyeq.com',
-          displayName: 'New Member',
-          emailVerified: true,
-          isAnonymous: false,
-          metadata: {},
-          providerData: [],
-          refreshToken: '',
-          tenantId: null,
-          delete: async () => { },
-          getIdToken: async () => '',
-          getIdTokenResult: async () => ({} as any),
-          reload: async () => { },
-          toJSON: () => ({}),
-          phoneNumber: null,
-          photoURL: null,
-          providerId: 'firebase',
-        } as User;
 
-        setUser(mockUser);
-        setProfile(null); // Ensure no profile data exists
+        // Subscribe to user profile changes
+        if (unsubscribeProfile) unsubscribeProfile();
+
+        const docRef = doc(db, 'users', currentUser.uid);
+        unsubscribeProfile = onSnapshot(docRef,
+          (docSnap) => {
+            if (docSnap.exists()) {
+              setProfile(docSnap.data());
+            } else {
+              // First login: auto-create profile
+              const newProfile = {
+                id: currentUser.uid,
+                full_name: currentUser.displayName || '',
+                email: currentUser.email || '',
+                role: 'member',
+                avatar_url: '',
+                created_at: new Date().toISOString(),
+                streaks: { current: 0 },
+                xp: 0
+              };
+
+              // We don't await this here to avoid blocking, but we set local state
+              setDoc(doc(db, 'users', currentUser.uid), newProfile)
+                .then(() => console.log('Profile created'))
+                .catch(err => console.error('Error creating profile:', err));
+
+              setProfile(newProfile);
+            }
+            setLoading(false);
+          },
+          (err) => {
+            console.error('Error listening to profile:', err);
+            setLoading(false);
+          }
+        );
+      } else {
+        // Logged out
+        setUser(null);
+        setProfile(null);
         setLoading(false);
+        if (unsubscribeProfile) {
+          unsubscribeProfile();
+          unsubscribeProfile = null;
+        }
       }
     });
 
-    return () => unsubscribe();
+    return () => {
+      unsubscribeAuth();
+      if (unsubscribeProfile) unsubscribeProfile();
+    };
   }, []);
 
+  // Kept for compatibility, but now just wraps the internal state update if needed, 
+  // though onSnapshot handles it automatically.
   const fetchProfile = async (userId: string) => {
-    try {
-      const docRef = doc(db, 'users', userId);
-      const docSnap = await getDoc(docRef);
+    // No-op: handled by onSnapshot
+    return;
+  };
 
-      if (docSnap.exists()) {
-        setProfile(docSnap.data());
-      } else {
-        console.log('No such profile!');
-        setProfile(null);
-      }
-    } catch (err) {
-      console.error('Unexpected error fetching profile:', err);
-    } finally {
-      setLoading(false);
+  const refreshProfile = async () => {
+    const currentUser = auth.currentUser;
+    if (currentUser) {
+      await fetchProfile(currentUser.uid);
     }
   };
 
@@ -84,7 +105,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const isAdmin = profile?.role === 'admin';
 
   return (
-    <AuthContext.Provider value={{ user, profile, loading, signOut, isAdmin }}>
+    <AuthContext.Provider value={{ user, profile, loading, signOut, refreshProfile, isAdmin }}>
       {children}
     </AuthContext.Provider>
   );

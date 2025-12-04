@@ -1,23 +1,62 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import GlassCard from '@/components/eyeq/GlassCard';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { auth } from '@/lib/firebase';
 import { createUserWithEmailAndPassword } from 'firebase/auth';
-import { checkApprovedRequest, createMember } from '@/lib/api';
+import { checkApprovedRequest, createMember, validateInvite, markInviteAsUsed, updateRequestStatus } from '@/lib/api';
 import { useToast } from '@/components/ui/use-toast';
-import { Loader2 } from 'lucide-react';
+import { Loader2, AlertCircle } from 'lucide-react';
 
 const Signup = () => {
+  const [searchParams] = useSearchParams();
   const [step, setStep] = useState<'check' | 'register'>('check');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [loading, setLoading] = useState(false);
   const [requestData, setRequestData] = useState<any>(null);
+  const [inviteData, setInviteData] = useState<any>(null);
+  const [inviteToken, setInviteToken] = useState<string | null>(null);
+  const [inviteError, setInviteError] = useState<string | null>(null);
   const navigate = useNavigate();
   const { toast } = useToast();
+
+  // Check for invite token in URL on mount
+  useEffect(() => {
+    const token = searchParams.get('invite');
+    if (token) {
+      validateInviteToken(token);
+    }
+  }, [searchParams]);
+
+  const validateInviteToken = async (token: string) => {
+    try {
+      const invite = await validateInvite(token);
+      if (invite) {
+        setInviteToken(token);
+        setInviteData(invite);
+        setEmail(invite.email);
+        setStep('register');
+        setInviteError(null);
+        toast({
+          title: "Invite Valid!",
+          description: "Your email has been pre-filled. Please set your password.",
+        });
+      } else {
+        setInviteError('This invite is invalid or has expired. Please check your email again.');
+        toast({
+          title: "Invalid Invite",
+          description: 'The invite link is invalid or expired.',
+          variant: "destructive",
+        });
+      }
+    } catch (error) {
+      console.error('Error validating invite:', error);
+      setInviteError('An error occurred validating your invite.');
+    }
+  };
 
   const handleCheck = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,18 +105,31 @@ const Signup = () => {
       const userCredential = await createUserWithEmailAndPassword(auth, email, password);
       const user = userCredential.user;
 
-      // 2. Create Profile
-      await createMember({
+      // 2. Prepare profile data
+      const profileData = {
         id: user.uid,
         email: email,
-        full_name: requestData.full_name,
-        phone: requestData.phone,
-        department: requestData.department,
-        skills: requestData.skills,
+        full_name: requestData?.full_name || inviteData?.full_name || '',
+        phone: requestData?.phone || inviteData?.phone || '',
+        department: requestData?.department || inviteData?.department || '',
+        skills: requestData?.skills || inviteData?.skills || [],
         role: 'member', // Default role
         created_at: new Date().toISOString(),
-        avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${requestData.full_name}` // Default avatar
-      });
+        avatar_url: `https://api.dicebear.com/7.x/avataaars/svg?seed=${(requestData?.full_name || inviteData?.full_name || email).replace(/\s/g, '_')}` // Default avatar
+      };
+
+      // 3. Create Profile
+      await createMember(profileData);
+
+      // 4. If invite was used, mark it as used and update request status
+      if (inviteToken && inviteData?.request_id) {
+        try {
+          await markInviteAsUsed(inviteToken);
+          await updateRequestStatus(inviteData.request_id, 'approved');
+        } catch (err) {
+          console.warn('Could not update invite/request status:', err);
+        }
+      }
 
       toast({
         title: "Account Created!",
@@ -109,6 +161,13 @@ const Signup = () => {
         <p className="text-center text-muted-foreground mb-6 text-sm">
           {step === 'check' ? "Enter your email to verify your approval status." : "Set a password to secure your account."}
         </p>
+
+        {inviteError && (
+          <div className="mb-4 p-3 rounded-md bg-destructive/10 border border-destructive/20 flex gap-2">
+            <AlertCircle className="w-4 h-4 text-destructive flex-shrink-0 mt-0.5" />
+            <p className="text-sm text-destructive">{inviteError}</p>
+          </div>
+        )}
 
         {step === 'check' ? (
           <form onSubmit={handleCheck} className='space-y-4'>

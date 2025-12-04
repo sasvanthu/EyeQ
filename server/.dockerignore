@@ -1,0 +1,10 @@
+node_modules
+.git
+.env
+serviceAccountKey.json
+*.log
+coverage
+dist
+tmp
+npm-debug.log
+Dockerfile

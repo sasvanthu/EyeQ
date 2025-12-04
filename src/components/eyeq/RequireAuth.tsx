@@ -10,7 +10,29 @@ interface RequireAuthProps {
 }
 
 const RequireAuth = ({ children, roles }: RequireAuthProps) => {
-  // TEMPORARY: Bypass all auth checks for testing
+  const { user, loading, isAdmin } = useAuth();
+  const location = useLocation();
+
+  if (loading) {
+    return <LoaderOne />;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" state={{ from: location }} replace />;
+  }
+
+  if (roles && roles.length > 0) {
+    const hasRequiredRole = roles.some(role => {
+      if (role === 'admin') return isAdmin;
+      if (role === 'member') return !isAdmin;
+      return false;
+    });
+
+    if (!hasRequiredRole) {
+      return <Navigate to="/" replace />;
+    }
+  }
+
   return children;
 };
 

@@ -1,16 +1,18 @@
-import React from 'react';
+import React, { useState } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { fetchRequests, updateRequestStatus, createMember } from '@/lib/api';
+import { fetchRequests, updateRequestStatus, createInvite } from '@/lib/api';
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
-import { Check, X, Loader2, UserPlus } from "lucide-react";
+import { Check, X, Loader2, UserPlus, Copy, Mail } from "lucide-react";
 import { useToast } from "@/components/ui/use-toast";
 import AdminLayout from '@/components/eyeq/AdminLayout';
 
 const MemberApproval = () => {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const [copiedToken, setCopiedToken] = useState<string | null>(null);
+  const [expandedRequest, setExpandedRequest] = useState<string | null>(null);
 
   const { data: requests, isLoading } = useQuery({
     queryKey: ['requests'],
@@ -18,28 +20,8 @@ const MemberApproval = () => {
   });
 
   const updateStatusMutation = useMutation({
-    mutationFn: async ({ id, status, requestData }: { id: string, status: 'approved' | 'rejected', requestData?: any }) => {
-      // 1. Update request status
+    mutationFn: async ({ id, status }: { id: string, status: 'approved' | 'rejected' }) => {
       await updateRequestStatus(id, status);
-
-      // 2. If approved, create a profile (Note: Auth user creation is separate)
-      if (status === 'approved' && requestData) {
-        // We can't create the Auth User here without Service Role, so we just create the profile
-        // The Admin must manually create the Auth User in Firebase Console to match this email/id
-        // OR we assume the Auth User will be created later and linked.
-
-        // Actually, 'profiles' relies on 'id' being the Auth ID. 
-        // Since we don't have the Auth ID yet, we CANNOT create the profile row correctly linked to auth.
-        // So, we will just mark the request as approved. 
-        // The workflow should be: Admin sees approved request -> Admin goes to Firebase -> Creates User -> User ID is generated -> Admin creates Profile (or User fills it on first login).
-
-        // REVISED FLOW: 
-        // 1. Admin clicks Approve.
-        // 2. Request marked 'approved'.
-        // 3. Admin manually invites user or creates account.
-
-        return;
-      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['requests'] });
@@ -57,8 +39,46 @@ const MemberApproval = () => {
     },
   });
 
-  const handleAction = (id: string, status: 'approved' | 'rejected', request: any) => {
-    updateStatusMutation.mutate({ id, status, requestData: request });
+  const sendInviteMutation = useMutation({
+    mutationFn: async ({ requestId, email }: { requestId: string, email: string }) => {
+      const inviteData = await createInvite(email, requestId);
+      // Mark request as approved
+      await updateRequestStatus(requestId, 'approved');
+      return inviteData;
+    },
+    onSuccess: (data) => {
+      queryClient.invalidateQueries({ queryKey: ['requests'] });
+      toast({
+        title: "Invite Sent!",
+        description: "The user will receive the invitation link.",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error sending invite",
+        description: error.message,
+        variant: "destructive",
+      });
+    },
+  });
+
+  const handleApprove = (id: string, email: string) => {
+    sendInviteMutation.mutate({ requestId: id, email });
+  };
+
+  const handleReject = (id: string) => {
+    updateStatusMutation.mutate({ id, status: 'rejected' });
+  };
+
+  const copyToClipboard = (token: string, email: string) => {
+    const inviteUrl = `${window.location.origin}/signup?invite=${token}`;
+    navigator.clipboard.writeText(inviteUrl);
+    setCopiedToken(token);
+    setTimeout(() => setCopiedToken(null), 2000);
+    toast({
+      title: "Link Copied!",
+      description: `Invitation link for ${email} copied to clipboard.`,
+    });
   };
 
   if (isLoading) {
@@ -126,15 +146,15 @@ const MemberApproval = () => {
               <div className="flex gap-2 pt-4">
                 <Button
                   className="flex-1 bg-green-600 hover:bg-green-700"
-                  onClick={() => handleAction(request.id, 'approved', request)}
-                  disabled={updateStatusMutation.isPending}
+                  onClick={() => handleApprove(request.id, request.email)}
+                  disabled={sendInviteMutation.isPending}
                 >
-                  <Check className="w-4 h-4 mr-2" /> Approve
+                  <Mail className="w-4 h-4 mr-2" /> {sendInviteMutation.isPending ? 'Sending...' : 'Send Invite'}
                 </Button>
                 <Button
                   variant="destructive"
                   className="flex-1"
-                  onClick={() => handleAction(request.id, 'rejected', request)}
+                  onClick={() => handleReject(request.id)}
                   disabled={updateStatusMutation.isPending}
                 >
                   <X className="w-4 h-4 mr-2" /> Reject

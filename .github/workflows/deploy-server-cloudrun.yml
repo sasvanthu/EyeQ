@@ -1,0 +1,50 @@
+name: Deploy Server to Cloud Run
+
+on:
+  push:
+    branches: [ main ]
+  workflow_dispatch: {}
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+
+      - name: Run server tests
+        working-directory: ./server
+        run: |
+          npm ci
+          npm test
+
+      - name: Setup gcloud
+        uses: google-github-actions/setup-gcloud@v1
+        with:
+          service_account_key: ${{ secrets.GCP_SA_KEY }}
+          project_id: ${{ secrets.GCP_PROJECT }}
+          export_default_credentials: true
+
+      - name: Build container with Cloud Build
+        run: |
+          gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.CLOUD_RUN_SERVICE }}:${{ github.sha }} ./server
+
+      - name: Deploy to Cloud Run
+        run: |
+          gcloud run deploy ${{ secrets.CLOUD_RUN_SERVICE }} \
+            --image gcr.io/${{ secrets.GCP_PROJECT }}/${{ secrets.CLOUD_RUN_SERVICE }}:${{ github.sha }} \
+            --region ${{ secrets.CLOUD_RUN_REGION }} \
+            --platform managed \
+            --allow-unauthenticated \
+            --set-env-vars ADMIN_API_KEY=${{ secrets.ADMIN_API_KEY }},FRONTEND_URL=${{ secrets.FRONTEND_URL }},FIREBASE_DATABASE_URL=${{ secrets.FIREBASE_DATABASE_URL }}
+
+      - name: Post-deploy health check
+        run: |
+          SERVICE_URL=$(gcloud run services describe ${{ secrets.CLOUD_RUN_SERVICE }} --project=${{ secrets.GCP_PROJECT }} --region=${{ secrets.CLOUD_RUN_REGION }} --format="value(status.url)")
+          echo "Service URL: $SERVICE_URL"
+          curl -f "$SERVICE_URL/api/health" || (echo "Health check failed" && exit 1)

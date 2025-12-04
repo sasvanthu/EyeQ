@@ -114,17 +114,6 @@ export async function fetchMembers() {
 }
 
 export async function fetchMember(id: string) {
-    if (id.startsWith('mock-')) {
-        return {
-            id: id,
-            full_name: 'New Member',
-            role: 'member',
-            avatar_url: '',
-            streaks: { current: 0 },
-            xp: 0,
-            created_at: new Date().toISOString()
-        };
-    }
     const docRef = doc(db, 'users', id);
     const docSnap = await getDoc(docRef);
     if (docSnap.exists()) {
@@ -135,19 +124,32 @@ export async function fetchMember(id: string) {
 }
 
 export async function createMember(member: any) {
-    // If ID is provided (e.g. from Auth), use setDoc, otherwise addDoc
-    if (member.id) {
-        await setDoc(doc(db, 'users', member.id), member);
-        return member;
-    } else {
-        const docRef = await addDoc(collection(db, 'users'), member);
-        return { id: docRef.id, ...member };
+    // Always use Firebase Auth UID as the document ID
+    if (!member.id) {
+        throw new Error('Member ID (Firebase Auth UID) is required');
     }
+
+    const memberData = {
+        ...member,
+        created_at: member.created_at || new Date().toISOString(),
+        id: member.id
+    };
+
+    await setDoc(doc(db, 'users', member.id), memberData);
+    return memberData;
 }
 
 export async function updateMember(id: string, payload: any) {
+    // Ensure we're using the correct document ID format (should be Firebase UID)
+    if (!id || id.startsWith('mock-')) {
+        throw new Error('Invalid member ID for update operation');
+    }
+
     const docRef = doc(db, 'users', id);
-    await updateDoc(docRef, payload);
+    await updateDoc(docRef, {
+        ...payload,
+        updated_at: new Date().toISOString()
+    });
     const updatedDoc = await getDoc(docRef);
     return { id: updatedDoc.id, ...updatedDoc.data() };
 }
@@ -155,6 +157,79 @@ export async function updateMember(id: string, payload: any) {
 export async function deleteMember(id: string) {
     await deleteDoc(doc(db, 'users', id));
     return true;
+}
+
+/**
+ * Approve a member after they sign up via invite
+ */
+export async function approveMember(id: string) {
+    return updateMember(id, {
+        status: 'approved',
+        approved_at: new Date().toISOString()
+    });
+}
+
+/**
+ * Upload a user's avatar image to Firebase Storage and update the user profile with the public URL.
+ * Stores file under `users/{uid}/avatars/{filename}` and sets `avatar_url` + `avatar_path` on the user doc.
+ */
+export async function uploadUserAvatar(uid: string, file: File) {
+    const timestamp = Date.now();
+    const fileExt = file.name.split('.').pop();
+    const fileName = `${timestamp}.${fileExt}`;
+    const storageRef = ref(storage, `users/${uid}/avatars/${fileName}`);
+
+    await uploadBytes(storageRef, file);
+    const publicUrl = await getDownloadURL(storageRef);
+    const avatarPath = `users/${uid}/avatars/${fileName}`;
+
+    const userRef = doc(db, 'users', uid);
+    await updateDoc(userRef, {
+        avatar_url: publicUrl,
+        avatar_path: avatarPath,
+        updated_at: new Date().toISOString()
+    });
+
+    return { url: publicUrl, path: avatarPath };
+}
+
+/**
+ * Upload a user photo (e.g., post image) to Storage and create an 'update' entry in the user's `updates` subcollection.
+ * Stores file under `users/{uid}/photos/{timestamp}_{filename}`.
+ */
+export async function uploadUserPhoto(uid: string, file: File, caption?: string) {
+    const timestamp = Date.now();
+    const safeName = file.name.replace(/\s+/g, '_');
+    const fileExt = safeName.split('.').pop();
+    const fileName = `${timestamp}_${safeName}`;
+    const storageRef = ref(storage, `users/${uid}/photos/${fileName}`);
+
+    await uploadBytes(storageRef, file);
+    const publicUrl = await getDownloadURL(storageRef);
+    const photoPath = `users/${uid}/photos/${fileName}`;
+
+    const docRef = await addDoc(collection(db, 'users', uid, 'updates'), {
+        type: 'photo',
+        url: publicUrl,
+        path: photoPath,
+        caption: caption || null,
+        created_at: serverTimestamp()
+    });
+
+    const newDoc = await getDoc(docRef);
+    return { id: newDoc.id, ...newDoc.data() };
+}
+
+/**
+ * Create a generic update/post in `users/{uid}/updates` subcollection.
+ */
+export async function createUserUpdate(uid: string, payload: any) {
+    const docRef = await addDoc(collection(db, 'users', uid, 'updates'), {
+        ...payload,
+        created_at: serverTimestamp()
+    });
+    const newDoc = await getDoc(docRef);
+    return { id: newDoc.id, ...newDoc.data() };
 }
 
 // --- Requests ---
@@ -374,3 +449,88 @@ export async function createLog(log: any) {
     const newDoc = await getDoc(docRef);
     return { id: newDoc.id, ...newDoc.data() };
 }
+
+// --- Invites ---
+
+/**
+ * Generate and store an invite for an approved request
+ * @param email - Email of the user being invited
+ * @param requestId - ID of the approval request
+ * @returns Invite token and details
+ */
+export async function createInvite(email: string, requestId: string) {
+    // Generate unique token
+    const token = Math.random().toString(36).substring(2) + Date.now().toString(36);
+
+    const expiresAt = new Date();
+    expiresAt.setDate(expiresAt.getDate() + 7); // 7 days from now
+
+    const inviteData = {
+        email,
+        request_id: requestId,
+        token,
+        created_at: new Date().toISOString(),
+        expires_at: expiresAt.toISOString(),
+        used: false
+    };
+
+    await setDoc(doc(db, 'invites', token), inviteData);
+    return inviteData;
+}
+
+/**
+ * Validate and retrieve an invite
+ * @param token - The invite token
+ * @returns Invite data if valid and not expired, null otherwise
+ */
+export async function validateInvite(token: string) {
+    try {
+        const docRef = doc(db, 'invites', token);
+        const docSnap = await getDoc(docRef);
+
+        if (!docSnap.exists()) {
+            return null;
+        }
+
+        const inviteData = docSnap.data();
+
+        // Check if already used
+        if (inviteData.used) {
+            return null;
+        }
+
+        // Check if expired
+        const expiresAt = new Date(inviteData.expires_at);
+        if (new Date() > expiresAt) {
+            return null;
+        }
+
+        return { ...inviteData, token };
+    } catch (err) {
+        console.error('Error validating invite:', err);
+        return null;
+    }
+}
+
+/**
+ * Mark invite as used
+ * @param token - The invite token
+ */
+export async function markInviteAsUsed(token: string) {
+    const docRef = doc(db, 'invites', token);
+    await updateDoc(docRef, { used: true });
+}
+
+/**
+ * Fetch invites for a specific email (admin view)
+ */
+export async function fetchInvitesByEmail(email: string) {
+    const q = query(
+        collection(db, 'invites'),
+        where('email', '==', email),
+        orderBy('created_at', 'desc')
+    );
+    const querySnapshot = await getDocs(q);
+    return querySnapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+}
+

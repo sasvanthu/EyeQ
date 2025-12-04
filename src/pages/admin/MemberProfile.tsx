@@ -3,8 +3,9 @@ import { useParams } from 'react-router-dom';
 import EyeQLayout from '@/components/eyeq/EyeQLayout';
 import GlassCard from '@/components/eyeq/GlassCard';
 import { Button } from '@/components/ui/button';
-import { useQuery } from '@tanstack/react-query';
-import { fetchMember } from '@/lib/api';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
+import { fetchMember, updateMember } from '@/lib/api';
+import { useToast } from '@/components/ui/use-toast';
 
 const MemberProfile: React.FC = () => {
   const { id } = useParams<{ id: string }>();
@@ -32,12 +33,42 @@ const MemberProfile: React.FC = () => {
     );
   }
 
+  const queryClient = useQueryClient();
+  const { toast } = useToast();
+
+  const handleRoleToggle = async () => {
+    try {
+      const newRole = member.role === 'admin' ? 'member' : 'admin';
+      await updateMember(member.id, { role: newRole });
+      await queryClient.invalidateQueries({ queryKey: ['member', id] });
+      toast({
+        title: "Role Updated",
+        description: `User is now a ${newRole}.`,
+      });
+    } catch (err) {
+      console.error(err);
+      toast({
+        title: "Error",
+        description: "Failed to update role.",
+        variant: "destructive"
+      });
+    }
+  };
+
   return (
     <EyeQLayout>
       <div className='space-y-4'>
-        <div>
-          <h3 className='text-2xl font-semibold'>{member.full_name}</h3>
-          <div className='text-sm text-muted-foreground'>{member.role} • Joined {new Date(member.joined_at).toLocaleDateString()}</div>
+        <div className="flex justify-between items-start">
+          <div>
+            <h3 className='text-2xl font-semibold'>{member.full_name}</h3>
+            <div className='text-sm text-muted-foreground capitalize'>{member.role} • Joined {member.joined_at ? new Date(member.joined_at).toLocaleDateString() : 'Unknown'}</div>
+          </div>
+          <Button
+            variant={member.role === 'admin' ? 'destructive' : 'default'}
+            onClick={handleRoleToggle}
+          >
+            {member.role === 'admin' ? 'Demote to Member' : 'Promote to Admin'}
+          </Button>
         </div>
 
         <div className='grid grid-cols-1 md:grid-cols-3 gap-4'>

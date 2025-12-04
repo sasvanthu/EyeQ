@@ -31,9 +31,10 @@ const AdminLogin = () => {
             if (user) {
                 const profile = await fetchMember(user.uid);
 
-                if ((profile as any)?.role !== 'admin') {
+                // Add null/undefined check for profile
+                if (!profile || (profile as any)?.role !== 'admin') {
                     await auth.signOut();
-                    throw new Error('Unauthorized access. Admin privileges required.');
+                    throw new Error('Unauthorized access. Admin privileges required. Please ensure your profile is set to admin role.');
                 }
 
                 toast({

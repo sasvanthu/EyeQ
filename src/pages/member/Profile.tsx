@@ -6,6 +6,8 @@ import { Badge } from '@/components/ui/badge';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import GlassCard from '@/components/eyeq/GlassCard';
 import NeonButton from '@/components/eyeq/NeonButton';
+import AvatarUploader from '@/components/AvatarUploader';
+import PhotoUploader from '@/components/PhotoUploader';
 import { useAuth } from '@/lib/auth';
 import { useQuery } from '@tanstack/react-query';
 import { fetchUserProjects } from '@/lib/api';
@@ -67,6 +69,10 @@ const Profile = () => {
                                 <Flame className="text-orange-500 fill-orange-500 animate-pulse" size={16} />
                                 <span className="text-xs font-bold text-white">{displayUser.stats.streak}</span>
                             </div>
+                        </div>
+                        {/* Avatar upload UI */}
+                        <div className="mt-4">
+                            <AvatarUploader />
                         </div>
                     </div>
 
@@ -190,9 +196,16 @@ const Profile = () => {
                         </TabsContent>
 
                         <TabsContent value="activity">
-                            <GlassCard className="p-8 text-center text-gray-500">
-                                Activity feed coming soon...
-                            </GlassCard>
+                            <div className="space-y-4">
+                                <GlassCard className="p-4">
+                                    <h3 className="text-lg font-bold text-white mb-2">Share a photo</h3>
+                                    <PhotoUploader onComplete={(doc) => console.log('uploaded photo', doc)} />
+                                </GlassCard>
+
+                                <GlassCard className="p-8 text-center text-gray-500">
+                                    Activity feed coming soon...
+                                </GlassCard>
+                            </div>
                         </TabsContent>
 
                         <TabsContent value="achievements" className="grid grid-cols-2 sm:grid-cols-3 gap-4">
