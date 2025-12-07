@@ -21,10 +21,10 @@ const StarBorder = ({
   const borderRef = useRef<HTMLDivElement>(null);
 
   const colorMap: Record<string, string> = {
-    cyan: "hsl(0, 0%, 70%)",
-    blue: "hsl(0, 0%, 70%)",
-    purple: "hsl(0, 0%, 70%)",
-    pink: "hsl(0, 0%, 70%)",
+    cyan: "hsl(180, 100%, 50%)",
+    blue: "hsl(217, 91%, 60%)",
+    purple: "hsl(270, 100%, 80%)",
+    pink: "hsl(330, 100%, 70%)",
   };
 
   const selectedColor = colorMap[color] || colorMap.cyan;
@@ -47,7 +47,7 @@ const StarBorder = ({
             ease: "linear",
           }}
         />
-        <div className="absolute inset-[2px] bg-card rounded-lg" />
+        <div className="absolute inset-[3px] bg-card rounded-lg" />
       </div>
       <div className="relative z-10">{children}</div>
     </Component>
