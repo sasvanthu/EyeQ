@@ -1,5 +1,7 @@
 "use client";
 import React from "react";
+import DecryptedText from "../DecryptedText";
+import { TextAnimate } from "./text-animate";
 import {
   motion,
   useScroll,
@@ -95,11 +97,17 @@ export const Header = () => {
   return (
     <div className="max-w-7xl relative mx-auto py-20 md:py-40 px-4 w-full  left-0 top-0">
       <h1 className="text-2xl md:text-7xl font-bold dark:text-white">
-        EyeQ Computer Vision <br /> Innovation Hub
+        <DecryptedText 
+          text="EyeQ Computer Vision Innovation Hub" 
+          animateOn="view" 
+          revealDirection="center" 
+        />
       </h1>
       <p className="max-w-2xl text-base md:text-xl mt-8 dark:text-neutral-200">
-        Empowering the next generation of computer vision engineers through hands-on projects,
-        collaborative learning, and real-world applications.
+        <TextAnimate animation="blurInUp" by="character" once>
+          Empowering the next generation of computer vision engineers through hands-on projects,
+          collaborative learning, and real-world applications.
+        </TextAnimate>
       </p>
     </div>
   );
@@ -129,7 +137,7 @@ export const ProductCard = ({
     >
       <a
         href={product.link}
-        className="block group-hover/product:shadow-2xl "
+        className="block group-hover/product:shadow-2xl cursor-target"
       >
         <img
           src={product.thumbnail}

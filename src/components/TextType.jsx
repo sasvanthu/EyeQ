@@ -2,7 +2,6 @@
 
 import { useEffect, useRef, useState, createElement, useMemo, useCallback } from 'react';
 import { gsap } from 'gsap';
-import './TextType.css';
 
 const TextType = ({
   text,
@@ -23,6 +22,7 @@ const TextType = ({
   onSentenceComplete,
   startOnVisible = false,
   reverseMode = false,
+  style = {},
   ...props
 }) => {
   const [displayedText, setDisplayedText] = useState('');
@@ -30,6 +30,7 @@ const TextType = ({
   const [isDeleting, setIsDeleting] = useState(false);
   const [currentTextIndex, setCurrentTextIndex] = useState(0);
   const [isVisible, setIsVisible] = useState(!startOnVisible);
+  const [isTypingComplete, setIsTypingComplete] = useState(false);
   const cursorRef = useRef(null);
   const containerRef = useRef(null);
 
@@ -67,15 +68,25 @@ const TextType = ({
   useEffect(() => {
     if (showCursor && cursorRef.current) {
       gsap.set(cursorRef.current, { opacity: 1 });
-      gsap.to(cursorRef.current, {
+      const cursorAnimation = gsap.to(cursorRef.current, {
         opacity: 0,
         duration: cursorBlinkDuration,
         repeat: -1,
         yoyo: true,
         ease: 'power2.inOut'
       });
+      
+      // Kill the animation when typing is complete
+      if (isTypingComplete) {
+        cursorAnimation.kill();
+        gsap.set(cursorRef.current, { opacity: 0 });
+      }
+      
+      return () => {
+        cursorAnimation.kill();
+      };
     }
-  }, [showCursor, cursorBlinkDuration]);
+  }, [showCursor, cursorBlinkDuration, isTypingComplete]);
 
   useEffect(() => {
     if (!isVisible) return;
@@ -89,6 +100,7 @@ const TextType = ({
         if (displayedText === '') {
           setIsDeleting(false);
           if (currentTextIndex === textArray.length - 1 && !loop) {
+            setIsTypingComplete(true);
             return;
           }
 
@@ -113,7 +125,11 @@ const TextType = ({
             },
             variableSpeed ? getRandomSpeed() : typingSpeed
           );
-        } else if (textArray.length > 1) {
+        } else if (textArray.length >= 1) {
+          if (!loop && currentTextIndex === textArray.length - 1) {
+            setIsTypingComplete(true);
+            return;
+          }
           timeout = setTimeout(() => {
             setIsDeleting(true);
           }, pauseDuration);
@@ -147,22 +163,72 @@ const TextType = ({
   ]);
 
   const shouldHideCursor =
-    hideCursorWhileTyping && (currentCharIndex < textArray[currentTextIndex].length || isDeleting);
+    hideCursorWhileTyping && (currentCharIndex < textArray[currentTextIndex].length || isDeleting) || isTypingComplete;
+
+  // Define default styles that were in the CSS file
+  const defaultStyles = {
+    display: 'inline-block',
+    fontFamily: "'Bebas Neue', sans-serif"
+  };
+
+  const contentStyles = {
+    display: 'inline-block'
+  };
+
+  const cursorStyles = {
+    display: 'inline-block',
+    marginLeft: '2px',
+    animation: 'blink 1s infinite'
+  };
+
+  const hiddenCursorStyles = {
+    opacity: 0
+  };
+
+  const completeCursorStyles = {
+    display: 'none'
+  };
+
+  // Add keyframes for the blink animation
+  useEffect(() => {
+    const styleSheet = document.createElement('style');
+    styleSheet.textContent = `
+      @keyframes blink {
+        0%, 100% {
+          opacity: 1;
+        }
+        50% {
+          opacity: 0;
+        }
+      }
+    `;
+    document.head.appendChild(styleSheet);
+    
+    return () => {
+      document.head.removeChild(styleSheet);
+    };
+  }, []);
 
   return createElement(
     Component,
     {
       ref: containerRef,
       className: `text-type ${className}`,
+      style: { ...defaultStyles, ...style },
       ...props
     },
-    <span className="text-type__content" style={{ color: getCurrentTextColor() || 'inherit' }}>
+    <span className="text-type__content" style={{ ...contentStyles, color: getCurrentTextColor() || 'inherit' }}>
       {displayedText}
     </span>,
     showCursor && (
       <span
         ref={cursorRef}
-        className={`text-type__cursor ${cursorClassName} ${shouldHideCursor ? 'text-type__cursor--hidden' : ''}`}
+        className={`text-type__cursor ${cursorClassName} ${shouldHideCursor ? 'text-type__cursor--hidden' : ''} ${isTypingComplete ? 'text-type__cursor--complete' : ''}`}
+        style={{
+          ...cursorStyles,
+          ...(shouldHideCursor ? hiddenCursorStyles : {}),
+          ...(isTypingComplete ? completeCursorStyles : {})
+        }}
       >
         {cursorCharacter}
       </span>
