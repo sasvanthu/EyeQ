@@ -10,7 +10,8 @@ service cloud.firestore {
     // Helper function to check if user is admin (you might need to adjust this based on your admin logic, e.g., custom claims or a user document field)
     // For now, we'll assume a 'role' field on the user document or just rely on auth for basic protection
     function isAdmin() {
-      return isAuthenticated() && get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      // Hardcoded Admin UID for strict security
+      return request.auth.uid == "ZWObGtuibGhEjmxR5Af2E0FxyEH2";
     }
 
     // User profiles

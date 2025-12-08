@@ -102,7 +102,8 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     setProfile(null);
   };
 
-  const isAdmin = profile?.role === 'admin';
+  // STRICT ADMIN CHECK: Only this specific UID is allowed to be admin
+  const isAdmin = user?.uid === 'ZWObGtuibGhEjmxR5Af2E0FxyEH2';
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, signOut, refreshProfile, isAdmin }}>
